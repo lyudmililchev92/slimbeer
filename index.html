@@ -197,6 +197,22 @@ h1,h2,h3,p{margin:0}
 .track-card:active{transform:translateY(3px) scale(.985);box-shadow:var(--sh-1)}
 .track-card.t-words{background:linear-gradient(180deg,#7D6FF0,var(--c-primary))}
 .track-card.t-catch{background:linear-gradient(180deg,#F2994A,#E07B39)}
+.track-card.t-forest{background:linear-gradient(180deg,#5FBF7A,#3E9460)}
+.forest-wrap{
+  position:relative;flex:1 1 auto;width:100%;min-height:clamp(190px,36vh,460px);
+  margin-top:var(--s-3);border-radius:var(--r-lg);overflow:hidden;touch-action:none;
+  box-shadow:inset 0 2px 10px rgba(42,42,69,.10);cursor:pointer;
+}
+.forest-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.nut-badge.done{background:var(--c-success-soft);color:#1B7C4A;animation:chip-bump var(--t-slow) var(--ease-back)}
+.nut-badge{
+  display:inline-flex;align-items:center;height:34px;padding:0 12px;
+  border-radius:var(--r-full);background:var(--c-warm-soft);color:#7A5312;
+  font-weight:var(--fw-bold);font-size:15px;white-space:nowrap;
+}
+/* четири пътя се подреждат две по две на тесен екран */
+.track-row{max-width:640px}
+.track-card{flex:1 1 40%;min-width:150px}
 .stage-play.full{flex:1 1 auto;min-height:0;width:100%;justify-content:stretch}
 .stage-full .stage-visual{display:none}
 .stage-full .stage{flex-direction:column;gap:var(--s-3);align-items:stretch}
@@ -878,7 +894,7 @@ const LANGS = {
       autoSpeak:"Woord vanzelf uitspreken",
       noSaveLabel:"Voortgang", noSaveText:"wordt hier niet bewaard — open het bestand in een browser-app", restartTrack:"Opnieuw beginnen", restartTitle:"Weer bij niveau 1 beginnen?",
       restartText:"De niveaus gaan terug naar het begin. Sterren en geleerde woorden blijven.",
-      trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT",
+      trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT", trackForest:"LETTERBOS",
       hintFindLetter:"Zoek de letter",
       promptRead:"Welk plaatje hoort bij dit woord?",
       promptCount:"Hoeveel zie je?", promptAdd:"Hoeveel zijn het er samen?",
@@ -954,7 +970,7 @@ const LANGS = {
       autoSpeak:"Сама да изговаря думата",
       noSaveLabel:"Прогрес", noSaveText:"тук не се запазва — отвори файла в приложение с браузър", restartTrack:"Започни отначало", restartTitle:"Да върнем ли на ниво 1?",
       restartText:"Нивата се връщат в началото. Звездите и научените думи остават.",
-      trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ",
+      trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ", trackForest:"В ГОРАТА",
       hintFindLetter:"Търси буквата",
       promptRead:"Коя картинка е думата?",
       promptCount:"Колко виждаш?", promptAdd:"Колко са заедно?",
@@ -1314,7 +1330,8 @@ function defaultTrackProgress(){
 }
 /* Всеки език има отделен прогрес за всеки път на учене. */
 function defaultLangProgress(){
-  return { words: defaultTrackProgress(), math: defaultTrackProgress(), catch: defaultTrackProgress() };
+  return { words: defaultTrackProgress(), math: defaultTrackProgress(),
+           catch: defaultTrackProgress(), forest: defaultTrackProgress() };
 }
 
 /* Прогресът по думи и нива е отделен за всеки език — ученето на
@@ -1332,7 +1349,7 @@ function defaultProgress(){
   };
 }
 
-const TRACK_IDS = ["words", "math", "catch"];
+const TRACK_IDS = ["words", "math", "catch", "forest"];
 
 const Store = {
   load(){
@@ -2660,6 +2677,416 @@ const MODE_CATCH = {
   }
 };
 
+
+/* =========================================================================
+ * 8d. ГОРАТА НА БУКВИТЕ — страничен скролър
+ * -------------------------------------------------------------------------
+ * Буки тича сам надясно през гората. Детето има само едно действие —
+ * докосване за подскок. Буквите висят по пътя: ниските се взимат в движение,
+ * високите искат подскок. Правилната буква влита в думата, грешната отскача.
+ *
+ * Никъде няма провал: няма живот, няма падане, няма край на играта. Когато
+ * думата се събере, напред израства дърво-порта и нивото свършва.
+ * Детето усеща бягане и събиране; ученето върви отстрани.
+ * ========================================================================= */
+const MODE_FOREST = {
+  id:"forest", showsPicture:false, fullArea:true,
+  supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 6; },
+
+  mount(root, host){
+    const word = host.word;
+    const letters = word.word.split("");
+    const lvl = getLevel(LP().currentLevel);
+    const nutsNeeded = lvl.nuts || 3;
+
+    let need = 0, mistakes = 0, nuts = 0, running = true, raf = 0, gateOut = false;
+
+    /* ---------- горна лента: дума + куест ---------- */
+    const head = h("div", { class:"catch-head" });
+    if(word.art || word.emoji) head.appendChild(renderArt(word, "catch-pic"));
+    const slotsEl = h("div", { class:"catch-slots" });
+    const slotEls = letters.map((ch, i) => {
+      const el = h("span", { class:"catch-slot" + (i === 0 ? " next" : "") }, "");
+      slotsEl.appendChild(el);
+      return el;
+    });
+    head.appendChild(slotsEl);
+    const quest = h("span", { class:"nut-badge" }, "🌰 0/" + nutsNeeded);
+    head.appendChild(quest);
+    root.appendChild(head);
+
+    const wrap = h("div", { class:"forest-wrap" });
+    const canvas = h("canvas");
+    wrap.appendChild(canvas);
+    root.appendChild(wrap);
+
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0, ground = 0, CH = 0;
+
+    /* ---------- Буки ---------- */
+    const hero = { y:0, vy:0, onGround:true, jumps:0, bob:0, img:null, ready:false, hurt:0 };
+    try{
+      const img = new Image();
+      img.onload = () => { hero.img = img; hero.ready = true; };
+      img.src = "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(mascotSVG().replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"'));
+    }catch(e){}
+
+    let camX = 0, nextChunk = 0;
+    const chunks = [], items = [], sparks = [];
+    const alphabet = L().alphabet;
+
+    const RUN  = (REDUCED_MOTION ? 0.17 : 0.27) * (lvl.speed || 1);
+    const GRAV = 2.9, JUMP = 1.32;      // връх на единичен скок ≈ 0.30 H
+
+    function layout(){
+      const w = wrap.clientWidth, hgt = wrap.clientHeight;
+      if(!w || !hgt) return;
+      W = w; H = hgt; ground = H * 0.78; CH = W * 0.52;
+      canvas.width = w * dpr; canvas.height = hgt * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+
+    /* ---------- светът се ражда парче по парче ---------- */
+    function addItem(kind, x, hgt, ch){
+      items.push({ kind:kind, x:x, hgt:hgt, ch:ch, taken:false, bob:Math.random()*6 });
+    }
+    function neededLetter(){
+      const nd = letters[need];
+      const pending = items.some(i => i.kind === "letter" && !i.taken && i.ch === nd && i.x > camX);
+      return (!pending || Math.random() < 0.5) ? nd : alphabet[Math.floor(Math.random()*alphabet.length)];
+    }
+    function makeChunk(){
+      const i = nextChunk++, x = i * CH;
+      const c = { x:x, pit:false, plat:null, shroom:null };
+
+      if(i > 2 && Math.random() < (lvl.pits || 0.16)) c.pit = true;
+      else if(Math.random() < 0.42)
+        c.plat = { x: x + CH * 0.18, w: CH * 0.58, hgt: 0.24 + Math.random() * 0.13 };
+      else if(Math.random() < 0.28)
+        c.shroom = { x: x + CH * 0.5 };
+      chunks.push(c);
+
+      if(c.pit) return;
+      const r = Math.random();
+      if(c.plat){
+        // Върху площадка: буква над нея или жълъд отгоре.
+        if(r < 0.62) addItem("letter", c.plat.x + c.plat.w * 0.5, c.plat.hgt + 0.13, neededLetter());
+        else addItem("nut", c.plat.x + c.plat.w * 0.5, c.plat.hgt + 0.07);
+      } else if(r < 0.45){
+        addItem("letter", x + CH * 0.55, 0.29 + Math.random() * 0.05, neededLetter());
+      } else if(r < 0.80){
+        addItem("nut", x + CH * 0.5, Math.random() < 0.55 ? 0.05 : 0.30);
+      }
+    }
+    function chunkAt(wx){
+      const i = Math.floor(wx / CH);
+      return chunks[i - (nextChunk - chunks.length)] || null;
+    }
+
+    function burst(sx, sy, kind){
+      if(REDUCED_MOTION) return;
+      const n = kind === "bad" ? 5 : 12;
+      for(let i = 0; i < n; i++)
+        sparks.push({ x:sx, y:sy, vx:(Math.random()-0.5)*200, vy:-Math.random()*240,
+                      life:1, c: kind === "bad" ? "#E9A0A8" : (kind === "nut" ? "#C58B4E" : "#FFD166") });
+    }
+
+    function checkQuest(){
+      if(gateOut) return;
+      if(need >= letters.length && nuts >= nutsNeeded){
+        gateOut = true;
+        items.push({ kind:"gate", x: camX + W * 1.25, hgt:0.34, taken:false, bob:0 });
+        Sfx.star();
+      }
+    }
+
+    function take(it, sx, sy){
+      it.taken = true;
+      if(it.kind === "nut"){
+        nuts++;
+        quest.textContent = "🌰 " + Math.min(nuts, nutsNeeded) + "/" + nutsNeeded;
+        if(nuts === nutsNeeded) quest.classList.add("done");
+        Sfx.tap(); burst(sx, sy, "nut"); checkQuest();
+        return;
+      }
+      if(it.ch === letters[need]){
+        slotEls[need].textContent = it.ch;
+        slotEls[need].classList.add("filled");
+        slotEls[need].classList.remove("next");
+        need++;
+        if(slotEls[need]) slotEls[need].classList.add("next");
+        Sfx.place(); burst(sx, sy, "good"); checkQuest();
+      } else {
+        mistakes++; Sfx.wrong(); burst(sx, sy, "bad"); host.mistake();
+      }
+    }
+
+    /* ---------- рисуване ---------- */
+    function hills(off, amp, base, color){
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(0, H);
+      for(let x = 0; x <= W; x += 14){
+        const y = base - Math.sin((x + off) / (W * 0.42)) * amp
+                       - Math.sin((x + off) / (W * 0.17)) * amp * 0.35;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    }
+    function tree(x, y, s, dark){
+      ctx.fillStyle = dark ? "#6B4F3A" : "#8C6A4F";
+      ctx.fillRect(x - s * 0.07, y - s * 0.42, s * 0.14, s * 0.42);
+      const g = dark ? ["#3E8E5A", "#4CA167"] : ["#8FD3A5", "#A6DDB6"];
+      for(let i = 0; i < 3; i++){
+        ctx.fillStyle = g[i % 2];
+        ctx.beginPath();
+        ctx.moveTo(x, y - s * (0.95 - i * 0.10));
+        ctx.lineTo(x - s * (0.26 + i * 0.09), y - s * (0.42 + i * 0.14));
+        ctx.lineTo(x + s * (0.26 + i * 0.09), y - s * (0.42 + i * 0.14));
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    function tile(sx, sy, size, txt, col){
+      ctx.save(); ctx.translate(sx, sy);
+      ctx.beginPath(); ctx.roundRect(-size/2, -size/2, size, size, size*0.24);
+      ctx.shadowColor = "rgba(42,42,69,.25)"; ctx.shadowBlur = size*0.2; ctx.shadowOffsetY = size*0.08;
+      ctx.fillStyle = "#FFF"; ctx.fill();
+      ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = "#8E82E8"; ctx.lineWidth = Math.max(2.5, size*0.055); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = "800 " + Math.round(size*0.55) + "px " + getComputedStyle(document.body).fontFamily;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(txt, 0, size*0.03);
+      ctx.restore();
+    }
+
+    function draw(){
+      ctx.clearRect(0, 0, W, H);
+      const sky = ctx.createLinearGradient(0, 0, 0, ground);
+      sky.addColorStop(0, "#CFE8FF"); sky.addColorStop(1, "#EAF6E9");
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, ground + 2);
+      ctx.fillStyle = "rgba(255,214,102,.85)";
+      ctx.beginPath(); ctx.arc(W*0.84, H*0.15, H*0.07, 0, Math.PI*2); ctx.fill();
+
+      hills(camX*0.10, H*0.06, ground - H*0.11, "#CDE8D2");
+      hills(camX*0.24, H*0.05, ground - H*0.04, "#A9D9B5");
+      const step = W*0.32, first = Math.floor((camX*0.45)/step) - 1;
+      for(let i = first; i < first + 8; i++)
+        tree(i*step - camX*0.45 + (i%3)*16, ground - H*0.02, H*(0.24 + ((i*37)%11)/44), false);
+
+      // земя с дупки
+      chunks.forEach(c => {
+        const sx = c.x - camX;
+        if(sx > W + CH || sx < -CH * 1.5) return;
+        if(c.pit){
+          ctx.fillStyle = "#8FC7E8";
+          ctx.fillRect(sx, ground + H*0.03, CH, H - ground);
+          ctx.fillStyle = "rgba(255,255,255,.55)";
+          for(let k = 0; k < 3; k++)
+            ctx.fillRect(sx + CH*(0.15 + k*0.3), ground + H*0.07 + (k%2)*6, CH*0.16, 3);
+        } else {
+          ctx.fillStyle = "#7FB069"; ctx.fillRect(sx, ground, CH + 1, H - ground);
+          ctx.fillStyle = "#6BA057"; ctx.fillRect(sx, ground, CH + 1, Math.max(4, H*0.014));
+        }
+        if(c.plat){
+          const px = c.plat.x - camX, py = ground - c.plat.hgt*H;
+          ctx.fillStyle = "#8C6A4F";
+          ctx.beginPath(); ctx.roundRect(px, py, c.plat.w, H*0.035, 6); ctx.fill();
+          ctx.fillStyle = "#5FBF7A";
+          ctx.beginPath(); ctx.roundRect(px, py - H*0.014, c.plat.w, H*0.02, 6); ctx.fill();
+        }
+        if(c.shroom){
+          const mx = c.shroom.x - camX, my = ground;
+          ctx.fillStyle = "#FFF1E0"; ctx.fillRect(mx - H*0.018, my - H*0.05, H*0.036, H*0.05);
+          ctx.fillStyle = "#E4574F";
+          ctx.beginPath(); ctx.ellipse(mx, my - H*0.05, H*0.055, H*0.038, 0, Math.PI, 0); ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255,.85)";
+          ctx.beginPath(); ctx.arc(mx - H*0.02, my - H*0.062, H*0.009, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(mx + H*0.018, my - H*0.055, H*0.007, 0, Math.PI*2); ctx.fill();
+        }
+      });
+
+      const isz = Math.max(32, Math.min(W*0.08, H*0.16, 66));
+      items.forEach(it => {
+        const sx = it.x - camX;
+        if(sx < -isz*2 || sx > W + isz) return;
+        const sy = ground - it.hgt*H - isz*0.5;
+        if(it.kind === "gate"){
+          ctx.fillStyle = "#8C6A4F";
+          ctx.fillRect(sx - H*0.04, ground - H*0.36, H*0.08, H*0.36);
+          ctx.fillStyle = "#3E9460";
+          ctx.beginPath(); ctx.arc(sx, ground - H*0.42, H*0.18, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = "#FFD166";
+          ctx.font = "800 " + Math.round(H*0.11) + "px " + getComputedStyle(document.body).fontFamily;
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText("★", sx, ground - H*0.42);
+          return;
+        }
+        if(it.taken) return;
+        it.bob += 0.05;
+        const by = sy + Math.sin(it.bob)*4;
+        if(it.kind === "nut"){
+          ctx.font = Math.round(isz*0.8) + "px serif";
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText("🌰", sx, by);
+        } else tile(sx, by, isz, it.ch, "#5548C8");
+      });
+
+      sparks.forEach(s => {
+        ctx.globalAlpha = Math.max(0, s.life);
+        ctx.fillStyle = s.c;
+        ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+
+      const hs = Math.max(48, Math.min(W*0.12, H*0.24, 100));
+      const hx = W*0.22, hy = ground - hero.y*H - hs*0.5;
+      ctx.save();
+      ctx.translate(hx, hy + (hero.onGround ? Math.sin(hero.bob)*3 : 0));
+      ctx.rotate(hero.onGround ? Math.sin(hero.bob)*0.05 : (hero.vy > 0 ? -0.16 : 0.12));
+      if(hero.hurt > 0){ ctx.globalAlpha = 0.5 + Math.sin(hero.hurt*30)*0.4; }
+      if(hero.ready){ try{ ctx.drawImage(hero.img, -hs/2, -hs/2, hs, hs); }catch(e){} }
+      else { ctx.fillStyle = "#7D6FF0"; ctx.beginPath(); ctx.arc(0,0,hs*0.35,0,Math.PI*2); ctx.fill(); }
+      ctx.restore();
+    }
+
+    /* ---------- ход на света ---------- */
+    let last = 0;
+    function frame(now){
+      if(!running) return;
+      if(!W) layout();
+      const dt = Math.min(0.05, last ? (now - last)/1000 : 0.016);
+      last = now;
+
+      camX += RUN * W * dt;
+      hero.bob += dt * 9;
+      if(hero.hurt > 0) hero.hurt -= dt;
+
+      while(nextChunk * CH < camX + W * 2.2) makeChunk();
+      while(chunks.length && chunks[0].x < camX - W * 1.2) chunks.shift();
+      while(items.length && items[0].x < camX - W * 0.8) items.shift();
+
+      const hs = Math.max(48, Math.min(W*0.12, H*0.24, 100));
+      const hx = W*0.22, heroWorld = camX + hx;
+      const prevY = hero.y;
+
+      hero.vy -= GRAV * dt;
+      hero.y += hero.vy * dt;
+
+      // площадки: стъпва се само отгоре
+      let landed = false;
+      for(const c of chunks){
+        if(!c.plat) continue;
+        const p = c.plat;
+        if(heroWorld > p.x - hs*0.25 && heroWorld < p.x + p.w + hs*0.25){
+          if(prevY >= p.hgt - 0.005 && hero.y <= p.hgt && hero.vy <= 0){
+            hero.y = p.hgt; hero.vy = 0; landed = true;
+          }
+        }
+        if(c.shroom && Math.abs(heroWorld - c.shroom.x) < hs*0.4 && hero.y <= 0.06 && hero.vy <= 0){
+          hero.y = 0.06; hero.vy = JUMP * 1.45; hero.jumps = 0;
+          Sfx.star(); burst(c.shroom.x - camX, ground - H*0.06, "good");
+        }
+      }
+
+      const overPit = (() => { const c = chunkAt(heroWorld); return c ? c.pit : false; })();
+      if(!landed && hero.y <= 0 && !overPit){ hero.y = 0; hero.vy = 0; landed = true; }
+
+      hero.onGround = landed;
+      if(landed) hero.jumps = 0;
+
+      // Падане в дупка: не връщаме назад — така дете, което не скача, би
+      // заседнало в същата дупка завинаги. Вместо това го пренасяме отвъд
+      // нея и продължава напред. Няма загуба, само малко трепване.
+      if(hero.y < -0.55){
+        camX += CH * 0.9;
+        hero.y = 0.55; hero.vy = 0; hero.hurt = 0.6;
+        Sfx.tap();
+      }
+
+      // събиране
+      const isz = Math.max(32, Math.min(W*0.08, H*0.16, 66));
+      const hy = ground - hero.y*H - hs*0.5, hr = hs*0.38;
+      for(const it of items){
+        if(it.taken) continue;
+        const sx = it.x - camX;
+        if(sx < -isz || sx > W + isz) continue;
+        const sy = ground - it.hgt*H - isz*0.5;
+        const rr = it.kind === "gate" ? H*0.19 : isz*0.5;
+        if(Math.hypot(sx - hx, sy - hy) < hr + rr){
+          if(it.kind === "gate"){
+            it.taken = true; running = false;
+            const bonus = Math.min(2, Math.floor((nuts - nutsNeeded) / 4));
+            if(bonus > 0) addStars(bonus);
+            setTimeout(() => host.correct(mistakes), 350);
+          } else take(it, sx, sy);
+        }
+      }
+
+      for(let i = sparks.length - 1; i >= 0; i--){
+        const s = sparks[i];
+        s.x += s.vx*dt; s.y += s.vy*dt; s.vy += 760*dt;
+        s.life -= dt*1.5;
+        if(s.life <= 0) sparks.splice(i, 1);
+      }
+
+      draw();
+      raf = requestAnimationFrame(frame);
+    }
+
+    /* ---------- управление: докосване = скок, втори скок във въздуха ---------- */
+    function jump(){
+      if(!running) return;
+      if(hero.onGround || hero.jumps < 2){
+        if(hero.onGround) hero.jumps = 1; else hero.jumps++;
+        hero.vy = JUMP * (hero.onGround ? 1 : 0.88);
+        hero.onGround = false;
+        Sfx.tap();
+      }
+    }
+    const onDown = (e) => { e.preventDefault(); jump(); };
+    wrap.addEventListener("pointerdown", onDown);
+    const onKey = (e) => { if(e.key === " " || e.key === "ArrowUp" || e.key === "Enter"){ e.preventDefault(); jump(); } };
+    window.addEventListener("keydown", onKey);
+    const onResize = () => layout();
+    window.addEventListener("resize", onResize);
+
+    setTimeout(() => { layout(); raf = requestAnimationFrame(frame); }, 0);
+    setTimeout(() => Speech.speak(word.display), 350);
+
+    return {
+      maxHints: 2,
+      hint(step){
+        if(step === 1){ Speech.speak(letters[need]); return t("hintFindLetter") + " " + letters[need]; }
+        if(need < letters.length)
+          addItem("letter", camX + W*0.62, 0.06, letters[need]);   // ниско, лесно за вземане
+        else addItem("nut", camX + W*0.62, 0.06);
+        return t("hintThisLetter");
+      },
+      destroy(){
+        running = false;
+        if(raf) cancelAnimationFrame(raf);
+        wrap.removeEventListener("pointerdown", onDown);
+        window.removeEventListener("keydown", onKey);
+        window.removeEventListener("resize", onResize);
+      }
+    };
+  }
+};
+
+/* Всяко ниво носи по-дълга дума, повече жълъди за куеста, повече дупки
+   и малко повече скорост. Промяната е плавна, за да не се усеща скок. */
+const FOREST_LEVELS = [
+  { id:1, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3, pits:0.00, speed:0.85, modes:["forest"] },
+  { id:2, minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4, pits:0.10, speed:0.92, modes:["forest"] },
+  { id:3, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5, pits:0.15, speed:1.00, modes:["forest"] },
+  { id:4, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6, pits:0.18, speed:1.06, modes:["forest"] },
+  { id:5, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7, pits:0.20, speed:1.12, modes:["forest"] },
+  { id:6, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8, pits:0.22, speed:1.18, modes:["forest"] },
+  { id:7, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9, pits:0.24, speed:1.24, modes:["forest"] }
+];
+
 const CATCH_LEVELS = [
   { id:1, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:4, modes:["catch"] },
   { id:2, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"] },
@@ -2681,6 +3108,14 @@ const TRACKS = {
     levels: () => LEVELS,
     pickItem: (level) => pickWord(level),
     pickMode: (level, item, force) => pickMode(level, item, force),
+    itemKey: (item) => item.word,
+    speak: (item) => item.display
+  },
+  forest: {
+    id:"forest", icon:"🌲",
+    levels: () => FOREST_LEVELS,
+    pickItem: (level) => pickWord(level),
+    pickMode: () => MODE_FOREST,
     itemKey: (item) => item.word,
     speak: (item) => item.display
   },
@@ -3043,7 +3478,8 @@ const Screens = {
     const tracks = h("div", { class:"track-row" },
       trackCard("words", "trackWords", "📖", "t-words"),
       trackCard("math",  "trackMath",  "🔢", "t-math"),
-      trackCard("catch", "trackCatch", "🕹️", "t-catch"));
+      trackCard("catch", "trackCatch", "🕹️", "t-catch"),
+      trackCard("forest", "trackForest", "🌲", "t-forest"));
     const playBtn = tracks.firstChild;
 
     const row = h("div", { class:"home-row" },
@@ -3343,7 +3779,7 @@ const Screens = {
         (() => {
           // Връща само нивата на този път — звездите и научените думи остават.
           const row = h("div", { class:"lang-row compact" });
-          [["words","trackWords","📖"],["math","trackMath","🔢"],["catch","trackCatch","🕹️"]].forEach(([tr, label, icon]) => {
+          [["words","trackWords","📖"],["math","trackMath","🔢"],["catch","trackCatch","🕹️"],["forest","trackForest","🌲"]].forEach(([tr, label, icon]) => {
             const b = h("button", { class:"lang-btn", type:"button" },
               h("span", { class:"flag" }, icon), t(label));
             b.addEventListener("click", () => {

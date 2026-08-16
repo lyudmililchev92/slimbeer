@@ -23,6 +23,15 @@ The game is called *Letterbeer* in Dutch and *Буквик* in Bulgarian.
 | Listen and choose | Hears a word, picks the matching picture |
 | Read and choose | Reads a written word, picks the matching picture |
 
+**Forest — 7 levels, a side-scrolling platformer.** Boekie runs to the right
+on his own; the child's only control is a tap to jump, plus a second jump in
+mid-air. Letters float at jump height, so nothing is picked up by accident —
+every letter is a decision. Platforms to land on, bouncy mushrooms, and water
+gaps. Falling in costs nothing: a gust carries him across and he runs on.
+
+Each level carries a quest: collect the word **and** a number of acorns. Only
+when both are done does a star-gate grow ahead and end the level.
+
 **Letter hunt — 6 levels, one 2D game.** Boekie moves along the bottom,
 letters drift down, and the child catches the one the word needs next. No
 timer, no lives, no game over: a wrong catch just bounces, a missed letter
@@ -109,6 +118,15 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 **Четене** — 12 нива и 6 вида задачи: подреждане на буквите, подреждане на
 срички, липсваща буква, с коя буква започва, чуй и избери картинка, прочети и
 избери картинка.
+
+**В гората** — 7 нива, страничен платформинг. Буки тича сам надясно, а
+детето има едно действие: докосване за скок, плюс втори скок във въздуха.
+Буквите висят на височина за скок, тоест нищо не се взима случайно — всяка
+буква е избор. Има площадки, гъби-пружини и водни дупки. Падането не струва
+нищо: полъх го пренася отвъд и продължава.
+
+Всяко ниво носи куест: събери думата **и** определен брой жълъди. Чак когато
+и двете са готови, напред израства дърво със звезда и нивото свършва.
 
 **Лов на буквите** — 6 нива, 2D игра. Буки се движи долу, буквите падат
 отгоре и детето хваща тази, която е наред. Без таймер, без животи и без край
