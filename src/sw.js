@@ -57,7 +57,10 @@ self.addEventListener("fetch", (e) => {
   if(url.origin !== self.location.origin) return;
 
   e.respondWith(
-    caches.match(e.request).then((hit) => {
+    // ignoreSearch: адресът може да носи ?нещо (споделена връзка, презареждане
+    // с параметър). Без това кешираният index.html не се разпознава и офлайн
+    // играта показва грешка на браузъра.
+    caches.match(e.request, { ignoreSearch: true }).then((hit) => {
       const fresh = fetch(new Request(e.request, { cache: "no-cache" }))
         .then((res) => {
           if(res && res.status === 200){
@@ -66,7 +69,13 @@ self.addEventListener("fetch", (e) => {
           }
           return res;
         })
-        .catch(() => hit);
+        .catch(() => {
+          // Мрежата я няма. Ако е поискана страница, даваме началната от
+          // кеша — иначе детето вижда съобщение за грешка вместо игра.
+          if(hit) return hit;
+          if(e.request.mode === "navigate") return caches.match("./index.html");
+          return Response.error();
+        });
       return hit || fresh;
     })
   );
