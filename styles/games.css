@@ -196,6 +196,7 @@
   cursor:pointer
 }
 .cue-word .cue-pic{ width:clamp(56px,12vmin,92px); height:clamp(56px,12vmin,92px) }
+.cue-word .cue-pic .emoji{ font-size:clamp(44px,10vmin,80px); line-height:1 }
 .cue-word .label{
   font-size:var(--fs-body); font-weight:var(--fw-bold); color:var(--c-ink-soft);
   letter-spacing:.06em
@@ -320,7 +321,7 @@
 .memory-grid{
   display:grid; gap:clamp(6px,1.4vmin,12px);
   grid-template-columns:repeat(var(--cols,4), minmax(0,1fr));
-  width:min(560px,92vw); margin:0 auto
+  width:min(720px,94vw); margin:0 auto
 }
 .memory-card{
   position:relative; aspect-ratio:1; cursor:pointer; border:none; padding:0;
@@ -339,7 +340,10 @@
 .memory-card .card-front{
   background:#FFF; opacity:0; box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
-.memory-card .card-front .art{ width:74%; height:74% }
+.memory-card .card-front .art{ width:82%; height:82% }
+/* Емоджито пълни картичката — дребно емоджи е неразбираемо, а точно тук
+   детето трябва да познае какво гледа. */
+.memory-card .card-front .art .emoji{ font-size:clamp(38px,10vmin,84px); line-height:1 }
 .memory-card .card-text{
   font-size:clamp(13px,2.4vmin,20px); font-weight:800; color:var(--c-primary);
   letter-spacing:.04em; text-align:center; padding:2px
@@ -359,7 +363,8 @@
   border-radius:var(--r-md,16px); background:#FFF;
   box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
-.sort-item .art{ width:clamp(34px,7vmin,58px); height:clamp(34px,7vmin,58px) }
+.sort-item .art{ width:clamp(46px,9vmin,76px); height:clamp(46px,9vmin,76px) }
+.sort-item .art .emoji{ font-size:clamp(34px,7.5vmin,62px); line-height:1 }
 .sort-item.on{ border-color:var(--c-primary); transform:translateY(-4px) }
 .sort-bins{ display:flex; gap:clamp(8px,2vmin,18px); justify-content:center; flex-wrap:wrap }
 .sort-bin{
@@ -372,7 +377,8 @@
 .bin-icon{ font-size:clamp(20px,4vmin,32px) }
 .bin-name{ font-size:var(--fs-small,13px); font-weight:800; color:var(--c-ink-soft) }
 .bin-items{ display:flex; flex-wrap:wrap; gap:3px; justify-content:center }
-.bin-items .bin-pic{ width:clamp(22px,4.4vmin,34px); height:clamp(22px,4.4vmin,34px) }
+.bin-items .bin-pic{ width:clamp(26px,5vmin,40px); height:clamp(26px,5vmin,40px) }
+.bin-items .bin-pic .emoji{ font-size:clamp(20px,4vmin,32px); line-height:1 }
 @media (prefers-reduced-motion: reduce){
   .memory-card .card-back, .memory-card .card-front{ transition:none }
   .sort-item.on{ transform:none }

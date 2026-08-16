@@ -168,6 +168,14 @@ h1,h2,h3,p{margin:0}
 
 /* =========================================================================
 
+/* Емоджито няма собствен размер — то е текст и наследява. Всяко място,
+   което показва картинка, трябва да му зададе размер. Това тук е предпазна
+   мрежа: забрави ли се правило, емоджито пак се вижда, вместо да излезе
+   с размера на обикновен текст. */
+.art{ display:flex; align-items:center; justify-content:center }
+.art .emoji{ font-size:clamp(30px,7vmin,56px); line-height:1 }
+.art svg{ width:100%; height:100% }
+
    Начален екран
    ========================================================================= */
 .home{align-items:center;justify-content:center;text-align:center;gap:clamp(8px,1.8vh,18px);overflow-y:auto}
@@ -583,6 +591,7 @@ h1,h2,h3,p{margin:0}
   cursor:pointer
 }
 .cue-word .cue-pic{ width:clamp(56px,12vmin,92px); height:clamp(56px,12vmin,92px) }
+.cue-word .cue-pic .emoji{ font-size:clamp(44px,10vmin,80px); line-height:1 }
 .cue-word .label{
   font-size:var(--fs-body); font-weight:var(--fw-bold); color:var(--c-ink-soft);
   letter-spacing:.06em
@@ -707,7 +716,7 @@ h1,h2,h3,p{margin:0}
 .memory-grid{
   display:grid; gap:clamp(6px,1.4vmin,12px);
   grid-template-columns:repeat(var(--cols,4), minmax(0,1fr));
-  width:min(560px,92vw); margin:0 auto
+  width:min(720px,94vw); margin:0 auto
 }
 .memory-card{
   position:relative; aspect-ratio:1; cursor:pointer; border:none; padding:0;
@@ -726,7 +735,10 @@ h1,h2,h3,p{margin:0}
 .memory-card .card-front{
   background:#FFF; opacity:0; box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
-.memory-card .card-front .art{ width:74%; height:74% }
+.memory-card .card-front .art{ width:82%; height:82% }
+/* Емоджито пълни картичката — дребно емоджи е неразбираемо, а точно тук
+   детето трябва да познае какво гледа. */
+.memory-card .card-front .art .emoji{ font-size:clamp(38px,10vmin,84px); line-height:1 }
 .memory-card .card-text{
   font-size:clamp(13px,2.4vmin,20px); font-weight:800; color:var(--c-primary);
   letter-spacing:.04em; text-align:center; padding:2px
@@ -746,7 +758,8 @@ h1,h2,h3,p{margin:0}
   border-radius:var(--r-md,16px); background:#FFF;
   box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
-.sort-item .art{ width:clamp(34px,7vmin,58px); height:clamp(34px,7vmin,58px) }
+.sort-item .art{ width:clamp(46px,9vmin,76px); height:clamp(46px,9vmin,76px) }
+.sort-item .art .emoji{ font-size:clamp(34px,7.5vmin,62px); line-height:1 }
 .sort-item.on{ border-color:var(--c-primary); transform:translateY(-4px) }
 .sort-bins{ display:flex; gap:clamp(8px,2vmin,18px); justify-content:center; flex-wrap:wrap }
 .sort-bin{
@@ -759,7 +772,8 @@ h1,h2,h3,p{margin:0}
 .bin-icon{ font-size:clamp(20px,4vmin,32px) }
 .bin-name{ font-size:var(--fs-small,13px); font-weight:800; color:var(--c-ink-soft) }
 .bin-items{ display:flex; flex-wrap:wrap; gap:3px; justify-content:center }
-.bin-items .bin-pic{ width:clamp(22px,4.4vmin,34px); height:clamp(22px,4.4vmin,34px) }
+.bin-items .bin-pic{ width:clamp(26px,5vmin,40px); height:clamp(26px,5vmin,40px) }
+.bin-items .bin-pic .emoji{ font-size:clamp(20px,4vmin,32px); line-height:1 }
 @media (prefers-reduced-motion: reduce){
   .memory-card .card-back, .memory-card .card-front{ transition:none }
   .sort-item.on{ transform:none }
@@ -2594,6 +2608,15 @@ const Sfx = {
 /* =========================================================================
  * 6. DOM / помощни функции
  * ========================================================================= */
+/* CSS променливите не се задават с присвояване — Object.assign ги подминава
+   мълчаливо. Затова минават през setProperty, а останалите — както преди. */
+function setStyle(el, styles){
+  for(const k in styles){
+    if(k.slice(0, 2) === "--") el.style.setProperty(k, styles[k]);
+    else el.style[k] = styles[k];
+  }
+}
+
 function h(tag, props, ...children){
   const e = document.createElement(tag);
   if(props){
@@ -2602,7 +2625,7 @@ function h(tag, props, ...children){
       if(v === null || v === undefined || v === false) continue;
       if(k === "class") e.className = v;
       else if(k === "html") e.innerHTML = v;
-      else if(k === "style") Object.assign(e.style, v);
+      else if(k === "style") setStyle(e, v);
       else if(k.slice(0,2) === "on") e.addEventListener(k.slice(2).toLowerCase(), v);
       else e.setAttribute(k, v === true ? "" : v);
     }
@@ -4627,7 +4650,9 @@ const MODE_MEMORY = {
     let open = [], found = 0, mistakes = 0, busy = false;
 
     root.appendChild(h("p", { class:"prompt" }, t("promptMemory")));
-    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(Math.min(4, Math.ceil(deck.length / 3))) } });
+    // Близка до квадрат подредба: 6 картички стават 3×2, 12 стават 4×3.
+    const cols = Math.min(4, Math.ceil(Math.sqrt(deck.length)));
+    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(cols) } });
 
     deck.forEach((c) => {
       const el = h("button", { class:"memory-card", type:"button", "aria-label": t("memoryCard") });

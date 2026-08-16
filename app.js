@@ -1547,6 +1547,15 @@ const Sfx = {
 /* =========================================================================
  * 6. DOM / помощни функции
  * ========================================================================= */
+/* CSS променливите не се задават с присвояване — Object.assign ги подминава
+   мълчаливо. Затова минават през setProperty, а останалите — както преди. */
+function setStyle(el, styles){
+  for(const k in styles){
+    if(k.slice(0, 2) === "--") el.style.setProperty(k, styles[k]);
+    else el.style[k] = styles[k];
+  }
+}
+
 function h(tag, props, ...children){
   const e = document.createElement(tag);
   if(props){
@@ -1555,7 +1564,7 @@ function h(tag, props, ...children){
       if(v === null || v === undefined || v === false) continue;
       if(k === "class") e.className = v;
       else if(k === "html") e.innerHTML = v;
-      else if(k === "style") Object.assign(e.style, v);
+      else if(k === "style") setStyle(e, v);
       else if(k.slice(0,2) === "on") e.addEventListener(k.slice(2).toLowerCase(), v);
       else e.setAttribute(k, v === true ? "" : v);
     }
@@ -3580,7 +3589,9 @@ const MODE_MEMORY = {
     let open = [], found = 0, mistakes = 0, busy = false;
 
     root.appendChild(h("p", { class:"prompt" }, t("promptMemory")));
-    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(Math.min(4, Math.ceil(deck.length / 3))) } });
+    // Близка до квадрат подредба: 6 картички стават 3×2, 12 стават 4×3.
+    const cols = Math.min(4, Math.ceil(Math.sqrt(deck.length)));
+    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(cols) } });
 
     deck.forEach((c) => {
       const el = h("button", { class:"memory-card", type:"button", "aria-label": t("memoryCard") });

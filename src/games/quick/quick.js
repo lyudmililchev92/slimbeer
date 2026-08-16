@@ -85,7 +85,9 @@ const MODE_MEMORY = {
     let open = [], found = 0, mistakes = 0, busy = false;
 
     root.appendChild(h("p", { class:"prompt" }, t("promptMemory")));
-    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(Math.min(4, Math.ceil(deck.length / 3))) } });
+    // Близка до квадрат подредба: 6 картички стават 3×2, 12 стават 4×3.
+    const cols = Math.min(4, Math.ceil(Math.sqrt(deck.length)));
+    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(cols) } });
 
     deck.forEach((c) => {
       const el = h("button", { class:"memory-card", type:"button", "aria-label": t("memoryCard") });
