@@ -32,6 +32,12 @@ gaps. Falling in costs nothing: a gust carries him across and he runs on.
 Each level carries a quest: collect the word **and** a number of acorns. Only
 when both are done does a star-gate grow ahead and end the level.
 
+From level three the forest also holds **challenge spots**. A wooden sign shows
+a sum such as `4 + 4`, and three numbered platforms wait below — land on the
+right one. Elsewhere a sign lights up a colour and three berries hang in the
+air; take the matching one. Both are optional and pay bonus stars, so a child
+who ignores them still finishes the level.
+
 **Letter hunt — 6 levels, one 2D game.** Boekie moves along the bottom,
 letters drift down, and the child catches the one the word needs next. No
 timer, no lives, no game over: a wrong catch just bounces, a missed letter
@@ -127,6 +133,12 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 
 Всяко ниво носи куест: събери думата **и** определен брой жълъди. Чак когато
 и двете са готови, напред израства дърво със звезда и нивото свършва.
+
+От трето ниво в гората се появяват и **предизвикателства**. На дървена табела
+пише сметка като `4 + 4`, а долу чакат три номерирани площадки — стъпва се на
+вярната. Другаде табелата свети в цвят и висят три плода; взима се същият цвят.
+И двете са по избор и дават бонус звезди, тоест дете, което ги подмине, пак
+завършва нивото.
 
 **Лов на буквите** — 6 нива, 2D игра. Буки се движи долу, буквите падат
 отгоре и детето хваща тази, която е наред. Без таймер, без животи и без край
