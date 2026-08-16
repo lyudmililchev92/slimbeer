@@ -89,9 +89,24 @@ game prefers a voice that runs on the device, but if the only voice available
 for a language is a server-side one, the word is sent to that service by the
 browser. The parent screen shows which voice is in use.
 
+## Files
+
+| File | What it is |
+|---|---|
+| `index.html` | the shell — a handful of tags |
+| `styles.css` | all the styling |
+| `game.js` | everything else: data, screens, game modes |
+| `sw.js` | offline caching, only used over HTTPS |
+| `build.py` | glues the three into one file |
+
+Nothing is compiled and nothing is installed. `python3 build.py --single`
+produces `letterbeer.html`, a single self-contained file you can send to a
+phone; `python3 build.py` produces the trimmed variant used for hosting inside
+another page.
+
 ## Running it
 
-Open `index.html`. That is the whole thing.
+Open `index.html`. The three files have to sit in the same folder.
 
 For a phone on the same network:
 
@@ -137,7 +152,9 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 срички, липсваща буква, с коя буква започва, чуй и избери картинка, прочети и
 избери картинка.
 
-**В гората** — 12 нива в четири сезона, страничен платформинг. Буки тича сам надясно, а
+**В гората** — 12 нива в четири сезона, страничен платформинг. Буки е рисуван
+на място: крачета в бяг, развяващ се шал, мигане и свиване при кацане.
+Златното перо дава седем секунди летене с четворен скок. Буки тича сам надясно, а
 детето има едно действие: докосване за скок, плюс втори скок във въздуха.
 Буквите висят на височина за скок, тоест нищо не се взима случайно — всяка
 буква е избор. Има площадки, гъби-пружини и водни дупки. Падането не струва

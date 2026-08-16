@@ -7,8 +7,8 @@
  * При отваряне на index.html като файл или по http:// браузърът не
  * позволява service worker и този файл просто не се използва.
  */
-const CACHE = "letterbeer-v3";
-const SHELL = ["./", "./index.html"];
+const CACHE = "letterbeer-v4";
+const SHELL = ["./", "./index.html", "./styles.css", "./game.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
