@@ -2071,7 +2071,14 @@ const FOREST_THEMES = {
             trunk:"#7A5230", sun:"rgba(255,178,80,.9)", air:"🍂", stars:false },
   night:  { sky1:"#2B2B57", sky2:"#4C4C7E", h1:"#3A3A68", h2:"#4A4A7C",
             gr:"#3F5C47", grass:"#345040", t1:"#3E6E52", t2:"#4C8062",
-            trunk:"#4A3A2E", sun:"rgba(235,240,255,.92)", air:"✨", stars:true }
+            trunk:"#4A3A2E", sun:"rgba(235,240,255,.92)", air:"✨", stars:true },
+  dusk:   { sky1:"#FFBE9C", sky2:"#FFE4D6", h1:"#EFC0B4", h2:"#DBA79C",
+            gr:"#8E6B5C", grass:"#7A5A4C", t1:"#9C5F58", t2:"#B87A6C",
+            trunk:"#5A3A2E", sun:"rgba(255,132,80,.95)", air:"🦋", stars:false },
+  winter: { sky1:"#CFE6F8", sky2:"#F4FBFF", h1:"#E6F2FB", h2:"#CFE3F1",
+            gr:"#F0F7FC", grass:"#B7D6EC", t1:"#4E8A6A", t2:"#6BA585",
+            trunk:"#6B5344", sun:"rgba(255,250,230,.9)", air:"❄️",
+            stars:false, snow:true }
 };
 
 /* Всяко ниво е малка история: горски приятел има нужда от нещо и детето
@@ -2089,12 +2096,20 @@ const FOREST_QUESTS = [
   { who:"🦊", item:"🫐", nl:"bessen",     bg:"боровинки" },
   { who:"🦉", item:"⭐", nl:"sterren",    bg:"звезди" },
   { who:"🦇", item:"🍄", nl:"paddenstoelen", bg:"гъби" },
-  { who:"🐉", item:"💎", nl:"kristallen", bg:"кристали" }
+  { who:"🐉", item:"💎", nl:"kristallen", bg:"кристали" },
+  { who:"🐺", item:"🦴", nl:"botjes",     bg:"кокали" },
+  { who:"🕷️", item:"🕸️", nl:"webben",     bg:"паяжини" },
+  { who:"🐧", item:"🧊", nl:"ijsblokjes",  bg:"ледчета" },
+  { who:"⛄", item:"❄️", nl:"sneeuwvlokken", bg:"снежинки" },
+  { who:"🦌", item:"🎁", nl:"cadeaus",    bg:"подаръци" },
+  { who:"🐢", item:"🍀", nl:"klavertjes", bg:"детелини" },
+  { who:"🦜", item:"🥜", nl:"pinda's",    bg:"фъстъци" },
+  { who:"🦫", item:"🪵", nl:"stokjes",    bg:"клечки" }
 ];
 
 const MODE_FOREST = {
   id:"forest", showsPicture:false, fullArea:true,
-  supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 6; },
+  supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 7; },
 
   mount(root, host){
     const word = host.word;
@@ -2363,6 +2378,15 @@ const MODE_FOREST = {
         ctx.arc(x + b[0]*s + ((seed % 5) - 2) * s*0.01, y + b[1]*s, b[2]*s, 0, Math.PI*2);
         ctx.fill();
       });
+      if(TH.snow){
+        // шапки сняг по горните корони — зимата трябва да се вижда, не да се предполага
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        [[0, -1.02, 0.17], [-0.26, -0.80, 0.13], [0.26, -0.80, 0.13]].forEach(b => {
+          ctx.beginPath();
+          ctx.ellipse(x + b[0]*s, y + b[1]*s, b[2]*s, b[2]*s*0.45, 0, 0, Math.PI*2);
+          ctx.fill();
+        });
+      }
       ctx.fillStyle = "rgba(255,255,255,.18)";
       ctx.beginPath(); ctx.arc(x - s*0.10, y - s*0.90, s*0.11, 0, Math.PI*2); ctx.fill();
     }
@@ -2556,7 +2580,9 @@ const MODE_FOREST = {
             ctx.stroke();
           }
           if((idx * 13 + k) % 6 === 0){
-            ctx.fillStyle = TH.stars ? "#C9C2F0" : ["#FF9DBB", "#FFD166", "#FFF"][(idx + k) % 3];
+            ctx.fillStyle = TH.snow ? "#FFF"
+                          : TH.stars ? "#C9C2F0"
+                          : ["#FF9DBB", "#FFD166", "#FFF"][(idx + k) % 3];
             ctx.beginPath(); ctx.arc(gx + 6, ground - tall * 1.25, 3.6, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = "rgba(255,255,255,.7)";
             ctx.beginPath(); ctx.arc(gx + 6, ground - tall * 1.25, 1.4, 0, Math.PI*2); ctx.fill();
@@ -2565,8 +2591,8 @@ const MODE_FOREST = {
         if(c.pit){
           const px = c.pit.x - camX;
           const wg = ctx.createLinearGradient(0, ground, 0, H);
-          wg.addColorStop(0, TH.stars ? "#4A6E9E" : "#9FD3EE");
-          wg.addColorStop(1, TH.stars ? "#2E4A70" : "#6FB6DC");
+          wg.addColorStop(0, TH.snow ? "#BEE6F5" : TH.stars ? "#4A6E9E" : "#9FD3EE");
+          wg.addColorStop(1, TH.snow ? "#79BEDC" : TH.stars ? "#2E4A70" : "#6FB6DC");
           ctx.fillStyle = wg;
           ctx.fillRect(px, ground, c.pit.w, H - ground);
           // вълнички, които се движат
@@ -2917,35 +2943,36 @@ const MODE_FOREST = {
 
 /* Всяко ниво носи по-дълга дума, повече жълъди за куеста, повече дупки
    и малко повече скорост. Промяната е плавна, за да не се усеща скок. */
+/* Двайсет нива. Всяко носи свой приятел, свой сезон и малко повече от
+   всичко — по-дълга дума, повече за събиране, по-бърз бяг, повече дупки. */
 const FOREST_LEVELS = [
-  // ливада: спокойно начало, без дупки, само букви и жълъди
-  { id:1,  theme:"meadow", quest:0, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3,
-    pits:0.00, speed:0.85, modes:["forest"] },
-  { id:2,  theme:"meadow", quest:1, minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4,
-    pits:0.08, speed:0.92, modes:["forest"] },
-  // гора: влизат предизвикателствата
-  { id:3,  theme:"day", quest:2, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
-    pits:0.12, speed:1.00, zones:0.6, zoneKinds:["count"], countMax:5, modes:["forest"] },
-  { id:4,  theme:"day", quest:3, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
-    pits:0.15, speed:1.04, zones:0.7, zoneKinds:["count","color"], countMax:6, modes:["forest"] },
-  { id:5,  theme:"day", quest:4, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
-    pits:0.16, speed:1.08, zones:0.7, zoneKinds:["color","first"], movers:0.25, modes:["forest"] },
-  { id:6,  theme:"day", quest:5, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
-    pits:0.18, speed:1.10, zones:0.8, zoneKinds:["first","sum"], sumMax:5, movers:0.3, modes:["forest"] },
-  // есен: сметките растат, площадките се движат по-често
-  { id:7,  theme:"autumn", quest:6, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7,
-    pits:0.20, speed:1.14, zones:0.8, zoneKinds:["sum","count"], sumMax:6, countMax:8, movers:0.35, modes:["forest"] },
-  { id:8,  theme:"autumn", quest:7, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:7,
-    pits:0.22, speed:1.18, zones:0.85, zoneKinds:["sum","color","first"], sumMax:7, movers:0.4, modes:["forest"] },
-  { id:9,  theme:"autumn", quest:8, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8,
-    pits:0.24, speed:1.22, zones:0.9, zoneKinds:["sum","count"], sumMax:8, countMax:9, movers:0.45, modes:["forest"] },
-  // нощ: най-трудното, със звезди и светулки
-  { id:10, theme:"night", quest:9, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9,
-    pits:0.24, speed:1.26, zones:0.9, zoneKinds:["sum","first","color"], sumMax:9, movers:0.5, modes:["forest"] },
-  { id:11, theme:"night", quest:10, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:10,
-    pits:0.26, speed:1.30, zones:1.0, zoneKinds:["sum","count"], sumMax:10, countMax:10, movers:0.55, modes:["forest"] },
-  { id:12, theme:"night", quest:11, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:12,
-    pits:0.28, speed:1.34, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.6, modes:["forest"] }
+  // ЛИВАДА — първи стъпки, без дупки
+  { id:1,  theme:"meadow", quest:0,  minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3,  pits:0.00, speed:0.85, modes:["forest"] },
+  { id:2,  theme:"meadow", quest:1,  minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4,  pits:0.08, speed:0.90, modes:["forest"] },
+  // ГОРА — влизат предизвикателствата
+  { id:3,  theme:"day", quest:2,  minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,  pits:0.12, speed:0.95, zones:0.6, zoneKinds:["count"], countMax:5, modes:["forest"] },
+  { id:4,  theme:"day", quest:3,  minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,  pits:0.14, speed:1.00, zones:0.7, zoneKinds:["count","color"], countMax:6, modes:["forest"] },
+  { id:5,  theme:"day", quest:4,  minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,  pits:0.16, speed:1.04, zones:0.7, zoneKinds:["color","first"], movers:0.25, modes:["forest"] },
+  // ЕСЕН — появяват се сметки
+  { id:6,  theme:"autumn", quest:5,  minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,  pits:0.18, speed:1.08, zones:0.8, zoneKinds:["first","sum"], sumMax:5, movers:0.30, modes:["forest"] },
+  { id:7,  theme:"autumn", quest:6,  minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7,  pits:0.19, speed:1.11, zones:0.8, zoneKinds:["sum","count"], sumMax:6, countMax:8, movers:0.35, modes:["forest"] },
+  { id:8,  theme:"autumn", quest:7,  minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:7,  pits:0.20, speed:1.14, zones:0.85, zoneKinds:["sum","color","first"], sumMax:7, movers:0.40, modes:["forest"] },
+  // ЗАЛЕЗ
+  { id:9,  theme:"dusk", quest:8,  minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8,  pits:0.21, speed:1.17, zones:0.85, zoneKinds:["sum","count"], sumMax:7, countMax:9, movers:0.40, modes:["forest"] },
+  { id:10, theme:"dusk", quest:9,  minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9,  pits:0.22, speed:1.20, zones:0.9, zoneKinds:["sum","first","color"], sumMax:8, movers:0.45, modes:["forest"] },
+  { id:11, theme:"dusk", quest:10, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:10, pits:0.23, speed:1.23, zones:0.9, zoneKinds:["sum","count"], sumMax:8, countMax:9, movers:0.45, modes:["forest"] },
+  // НОЩ
+  { id:12, theme:"night", quest:11, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:11, pits:0.24, speed:1.26, zones:0.95, zoneKinds:["sum","count","color","first"], sumMax:9, countMax:10, movers:0.50, modes:["forest"] },
+  { id:13, theme:"night", quest:12, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, nuts:12, pits:0.25, speed:1.29, zones:0.95, zoneKinds:["sum","count"], sumMax:9, countMax:10, movers:0.50, modes:["forest"] },
+  { id:14, theme:"night", quest:13, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, nuts:12, pits:0.26, speed:1.31, zones:1.0, zoneKinds:["sum","first"], sumMax:10, movers:0.55, modes:["forest"] },
+  // ЗИМА
+  { id:15, theme:"winter", quest:14, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, nuts:13, pits:0.26, speed:1.33, zones:1.0, zoneKinds:["count","color"], countMax:10, movers:0.55, modes:["forest"] },
+  { id:16, theme:"winter", quest:15, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:14, pits:0.27, speed:1.35, zones:1.0, zoneKinds:["sum","count"], sumMax:10, countMax:10, movers:0.60, modes:["forest"] },
+  { id:17, theme:"winter", quest:16, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:14, pits:0.28, speed:1.37, zones:1.0, zoneKinds:["sum","first","color"], sumMax:10, movers:0.60, modes:["forest"] },
+  // ФИНАЛ — обратно в нощната гора, най-трудното
+  { id:18, theme:"night", quest:17, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:15, pits:0.28, speed:1.39, zones:1.0, zoneKinds:["sum","count","first"], sumMax:10, countMax:10, movers:0.65, modes:["forest"] },
+  { id:19, theme:"night", quest:18, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:16, pits:0.29, speed:1.41, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.70, modes:["forest"] },
+  { id:20, theme:"night", quest:19, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:18, pits:0.30, speed:1.43, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.75, modes:["forest"] }
 ];
 
 const CATCH_LEVELS = [
