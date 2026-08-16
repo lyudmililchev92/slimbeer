@@ -2578,6 +2578,10 @@ const MODE_CATCH = {
         ctx.restore();
       });
 
+      ctx.font = Math.round(H*0.055) + "px serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      air.forEach(a => ctx.fillText(TH.air, a.x, a.y));
+
       sparks.forEach(s => {
         ctx.globalAlpha = Math.max(0, s.life);
         ctx.fillStyle = s.good ? "#2FBF71" : "#E9A0A8";
@@ -2691,6 +2695,23 @@ const MODE_CATCH = {
  * думата се събере, напред израства дърво-порта и нивото свършва.
  * Детето усеща бягане и събиране; ученето върви отстрани.
  * ========================================================================= */
+/* Всяко ниво има свой сезон. Само цветове и дребни детайли, но гората
+   изглежда различна и детето усеща, че напредва някъде. */
+const FOREST_THEMES = {
+  day:    { sky1:"#CFE8FF", sky2:"#EAF6E9", h1:"#CDE8D2", h2:"#A9D9B5",
+            gr:"#7FB069", grass:"#6BA057", t1:"#8FD3A5", t2:"#A6DDB6",
+            trunk:"#8C6A4F", sun:"rgba(255,214,102,.85)", air:"🦋", stars:false },
+  meadow: { sky1:"#DCF0FF", sky2:"#F6FCEA", h1:"#DCEFC0", h2:"#C2E39E",
+            gr:"#8FC46A", grass:"#7AB157", t1:"#9FD98A", t2:"#B7E5A2",
+            trunk:"#96724F", sun:"rgba(255,232,150,.9)", air:"🐝", stars:false },
+  autumn: { sky1:"#FFE0BE", sky2:"#FFF4E4", h1:"#F0D3A8", h2:"#E4BF8E",
+            gr:"#C98A4B", grass:"#B0763C", t1:"#E8A33D", t2:"#F2C14E",
+            trunk:"#7A5230", sun:"rgba(255,178,80,.9)", air:"🍂", stars:false },
+  night:  { sky1:"#2B2B57", sky2:"#4C4C7E", h1:"#3A3A68", h2:"#4A4A7C",
+            gr:"#3F5C47", grass:"#345040", t1:"#3E6E52", t2:"#4C8062",
+            trunk:"#4A3A2E", sun:"rgba(235,240,255,.92)", air:"✨", stars:true }
+};
+
 const MODE_FOREST = {
   id:"forest", showsPicture:false, fullArea:true,
   supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 6; },
@@ -2700,6 +2721,7 @@ const MODE_FOREST = {
     const letters = word.word.split("");
     const lvl = getLevel(LP().currentLevel);
     const nutsNeeded = lvl.nuts || 3;
+    const TH = FOREST_THEMES[lvl.theme || "day"];
 
     let need = 0, mistakes = 0, nuts = 0, running = true, raf = 0, gateOut = false;
     let bonus = 0;                 // решени предизвикателства по пътя
@@ -2745,8 +2767,11 @@ const MODE_FOREST = {
         encodeURIComponent(mascotSVG().replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"'));
     }catch(e){}
 
-    let camX = 0, nextChunk = 0;
+    let camX = 0, nextChunk = 0, clock = 0;
+    const air = [];        // пеперуди, листа, светулки
     const chunks = [], items = [], sparks = [];
+    /* Височина на площадка в момента — някои се движат нагоре-надолу. */
+    function ph(p){ return p.move ? p.hgt + Math.sin(clock * p.move.sp + p.move.ph) * p.move.amp : p.hgt; }
     const alphabet = L().alphabet;
 
     const RUN  = (REDUCED_MOTION ? 0.17 : 0.27) * (lvl.speed || 1);
@@ -2776,6 +2801,25 @@ const MODE_FOREST = {
       const kinds = lvl.zoneKinds || [];
       if(!kinds.length) return false;
       const kind = rand(kinds);
+
+      if(kind === "count" || kind === "first"){
+        let answer, opts;
+        if(kind === "count"){
+          answer = 2 + Math.floor(Math.random() * ((lvl.countMax || 6) - 1));
+          opts = shuffle([answer, answer + 1, Math.max(1, answer - 1)]);
+        } else {
+          answer = letters[0];
+          const other = shuffle(alphabet.filter(l => l !== answer)).slice(0, 2);
+          opts = shuffle([answer].concat(other));
+        }
+        const z = { kind:kind, x:x + CH * 0.28, answer:answer, n:answer, done:false };
+        zones.push(z);
+        c.plats = opts.map((v, k) => ({
+          x: x + CH * (0.34 + k * 0.24), w: CH * 0.26, hgt: 0.18 + (k % 2) * 0.05,
+          label: String(v), zone: z, value: v
+        }));
+        return true;
+      }
 
       if(kind === "sum"){
         const max = lvl.sumMax || 5;
@@ -2812,9 +2856,19 @@ const MODE_FOREST = {
       if(i > 3 && i % 4 === 0 && Math.random() < (lvl.zones || 0)){
         if(makeZone(c, x)){ chunks.push(c); return; }
       }
-      if(i > 2 && Math.random() < (lvl.pits || 0.16)) c.pit = true;
-      else if(Math.random() < 0.42)
-        c.plat = { x: x + CH * 0.18, w: CH * 0.58, hgt: 0.24 + Math.random() * 0.13 };
+      if(i > 2 && Math.random() < (lvl.pits || 0.16)){
+        // Ширината се смята от реалния скок, за да е винаги прескачаема.
+        const airTime = 2 * JUMP / GRAV;
+        const jumpDist = RUN * W * airTime;
+        const pw = Math.min(CH * 0.55, jumpDist * 0.62);
+        c.pit = { x: x + (CH - pw) * 0.5, w: pw };
+      }
+      else if(Math.random() < 0.42){
+        c.plat = { x: x + CH * 0.18, w: CH * 0.58, hgt: 0.22 + Math.random() * 0.12 };
+        if(lvl.movers && Math.random() < lvl.movers)
+          c.plat.move = { amp: 0.05 + Math.random() * 0.05, sp: 1.1 + Math.random() * 0.8,
+                          ph: Math.random() * 6.3 };
+      }
       else if(Math.random() < 0.28)
         c.shroom = { x: x + CH * 0.5 };
       chunks.push(c);
@@ -2895,9 +2949,9 @@ const MODE_FOREST = {
       ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
     }
     function tree(x, y, s, dark){
-      ctx.fillStyle = dark ? "#6B4F3A" : "#8C6A4F";
+      ctx.fillStyle = TH.trunk;
       ctx.fillRect(x - s * 0.07, y - s * 0.42, s * 0.14, s * 0.42);
-      const g = dark ? ["#3E8E5A", "#4CA167"] : ["#8FD3A5", "#A6DDB6"];
+      const g = [TH.t1, TH.t2];
       for(let i = 0; i < 3; i++){
         ctx.fillStyle = g[i % 2];
         ctx.beginPath();
@@ -2923,13 +2977,22 @@ const MODE_FOREST = {
     function draw(){
       ctx.clearRect(0, 0, W, H);
       const sky = ctx.createLinearGradient(0, 0, 0, ground);
-      sky.addColorStop(0, "#CFE8FF"); sky.addColorStop(1, "#EAF6E9");
+      sky.addColorStop(0, TH.sky1); sky.addColorStop(1, TH.sky2);
       ctx.fillStyle = sky; ctx.fillRect(0, 0, W, ground + 2);
-      ctx.fillStyle = "rgba(255,214,102,.85)";
+      if(TH.stars){
+        for(let k = 0; k < 26; k++){
+          const sxx = ((k * 137) % 100) / 100 * W, syy = ((k * 53) % 60) / 100 * H;
+          ctx.globalAlpha = 0.35 + ((k * 31) % 50) / 100;
+          ctx.fillStyle = "#FFF";
+          ctx.fillRect(sxx, syy, 2, 2);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = TH.sun;
       ctx.beginPath(); ctx.arc(W*0.84, H*0.15, H*0.07, 0, Math.PI*2); ctx.fill();
 
-      hills(camX*0.10, H*0.06, ground - H*0.11, "#CDE8D2");
-      hills(camX*0.24, H*0.05, ground - H*0.04, "#A9D9B5");
+      hills(camX*0.10, H*0.06, ground - H*0.11, TH.h1);
+      hills(camX*0.24, H*0.05, ground - H*0.04, TH.h2);
       const step = W*0.32, first = Math.floor((camX*0.45)/step) - 1;
       for(let i = first; i < first + 8; i++)
         tree(i*step - camX*0.45 + (i%3)*16, ground - H*0.02, H*(0.24 + ((i*37)%11)/44), false);
@@ -2938,18 +3001,22 @@ const MODE_FOREST = {
       chunks.forEach(c => {
         const sx = c.x - camX;
         if(sx > W + CH || sx < -CH * 1.5) return;
+        ctx.fillStyle = TH.gr; ctx.fillRect(sx, ground, CH + 1, H - ground);
+        ctx.fillStyle = TH.grass; ctx.fillRect(sx, ground, CH + 1, Math.max(4, H*0.014));
         if(c.pit){
+          const px = c.pit.x - camX;
           ctx.fillStyle = "#8FC7E8";
-          ctx.fillRect(sx, ground + H*0.03, CH, H - ground);
-          ctx.fillStyle = "rgba(255,255,255,.55)";
+          ctx.fillRect(px, ground, c.pit.w, H - ground);
+          ctx.fillStyle = "rgba(255,255,255,.6)";
           for(let k = 0; k < 3; k++)
-            ctx.fillRect(sx + CH*(0.15 + k*0.3), ground + H*0.07 + (k%2)*6, CH*0.16, 3);
-        } else {
-          ctx.fillStyle = "#7FB069"; ctx.fillRect(sx, ground, CH + 1, H - ground);
-          ctx.fillStyle = "#6BA057"; ctx.fillRect(sx, ground, CH + 1, Math.max(4, H*0.014));
+            ctx.fillRect(px + c.pit.w*0.12, ground + H*0.05 + k*H*0.035, c.pit.w*0.34, 3);
+          // тревни ръбове от двете страни, за да се вижда откъде се скача
+          ctx.fillStyle = TH.grass;
+          ctx.fillRect(px - 6, ground, 6, Math.max(4, H*0.02));
+          ctx.fillRect(px + c.pit.w, ground, 6, Math.max(4, H*0.02));
         }
         if(c.plats) c.plats.forEach(p => {
-          const px = p.x - camX, py = ground - p.hgt*H;
+          const px = p.x - camX, py = ground - ph(p)*H;
           ctx.fillStyle = p.zone && p.zone.done ? "#9FBF8C" : "#8C6A4F";
           ctx.beginPath(); ctx.roundRect(px, py, p.w, H*0.045, 6); ctx.fill();
           ctx.fillStyle = "#FFF";
@@ -2958,7 +3025,7 @@ const MODE_FOREST = {
           ctx.fillText(p.label, px + p.w/2, py + H*0.023);
         });
         if(c.plat){
-          const px = c.plat.x - camX, py = ground - c.plat.hgt*H;
+          const px = c.plat.x - camX, py = ground - ph(c.plat)*H;
           ctx.fillStyle = "#8C6A4F";
           ctx.beginPath(); ctx.roundRect(px, py, c.plat.w, H*0.035, 6); ctx.fill();
           ctx.fillStyle = "#5FBF7A";
@@ -2990,6 +3057,22 @@ const MODE_FOREST = {
           ctx.fillStyle = "#5548C8";
           ctx.font = "800 " + Math.round(bh*0.52) + "px " + getComputedStyle(document.body).fontFamily;
           ctx.fillText(z.a + " + " + z.b, sx, by + bh*0.5);
+        } else if(z.kind === "count"){
+          // Толкова жълъда, колкото е отговорът — детето ги брои.
+          const per = Math.min(4, z.n), rows = Math.ceil(z.n / per);
+          const r = bh * 0.13;
+          for(let k = 0; k < z.n; k++){
+            const rr = Math.floor(k / per), cc = k % per;
+            const cnt = Math.min(per, z.n - rr * per);
+            ctx.fillStyle = "#A9713F";
+            ctx.beginPath();
+            ctx.arc(sx + (cc - (cnt - 1) / 2) * r * 2.6,
+                    by + bh * 0.5 + (rr - (rows - 1) / 2) * r * 2.6, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if(z.kind === "first"){
+          ctx.font = Math.round(bh*0.62) + "px serif";
+          ctx.fillText(word.emoji || "?", sx, by + bh*0.52);
         } else {
           ctx.fillStyle = z.color;
           ctx.beginPath(); ctx.arc(sx, by + bh*0.5, bh*0.30, 0, Math.PI*2); ctx.fill();
@@ -3028,6 +3111,10 @@ const MODE_FOREST = {
         } else tile(sx, by, isz, it.ch, "#5548C8");
       });
 
+      ctx.font = Math.round(H*0.055) + "px serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      air.forEach(a => ctx.fillText(TH.air, a.x, a.y));
+
       sparks.forEach(s => {
         ctx.globalAlpha = Math.max(0, s.life);
         ctx.fillStyle = s.c;
@@ -3055,7 +3142,19 @@ const MODE_FOREST = {
       last = now;
 
       camX += RUN * W * dt;
+      clock += dt;
       hero.bob += dt * 9;
+
+      // пеперуди, листа или светулки според сезона
+      if(!REDUCED_MOTION && air.length < 6 && Math.random() < dt * 1.6)
+        air.push({ x: W + 30, y: H * (0.12 + Math.random() * 0.5),
+                   vx: -(20 + Math.random() * 45), t: Math.random() * 6 });
+      for(let i = air.length - 1; i >= 0; i--){
+        const a = air[i];
+        a.x += a.vx * dt; a.t += dt * 3;
+        a.y += Math.sin(a.t) * 14 * dt;
+        if(a.x < -40) air.splice(i, 1);
+      }
       if(hero.hurt > 0) hero.hurt -= dt;
 
       while(nextChunk * CH < camX + W * 2.2) makeChunk();
@@ -3074,9 +3173,10 @@ const MODE_FOREST = {
       for(const c of chunks){
         if(c.plats){
           for(const p of c.plats){
+            const py = ph(p);
             if(heroWorld > p.x - hs*0.25 && heroWorld < p.x + p.w + hs*0.25 &&
-               prevY >= p.hgt - 0.005 && hero.y <= p.hgt && hero.vy <= 0){
-              hero.y = p.hgt; hero.vy = 0; landed = true;
+               prevY >= py - 0.02 && hero.y <= py && hero.vy <= 0){
+              hero.y = py; hero.vy = 0; landed = true;
               const z = p.zone;
               if(z && !z.done){
                 if(p.value === z.answer){
@@ -3093,9 +3193,10 @@ const MODE_FOREST = {
         }
         if(!c.plat) continue;
         const p = c.plat;
+        const py2 = ph(p);
         if(heroWorld > p.x - hs*0.25 && heroWorld < p.x + p.w + hs*0.25){
-          if(prevY >= p.hgt - 0.005 && hero.y <= p.hgt && hero.vy <= 0){
-            hero.y = p.hgt; hero.vy = 0; landed = true;
+          if(prevY >= py2 - 0.02 && hero.y <= py2 && hero.vy <= 0){
+            hero.y = py2; hero.vy = 0; landed = true;
           }
         }
         if(c.shroom && Math.abs(heroWorld - c.shroom.x) < hs*0.4 && hero.y <= 0.06 && hero.vy <= 0){
@@ -3104,7 +3205,10 @@ const MODE_FOREST = {
         }
       }
 
-      const overPit = (() => { const c = chunkAt(heroWorld); return c ? c.pit : false; })();
+      const overPit = (() => {
+        const c = chunkAt(heroWorld);
+        return !!(c && c.pit && heroWorld > c.pit.x && heroWorld < c.pit.x + c.pit.w);
+      })();
       if(!landed && hero.y <= 0 && !overPit){ hero.y = 0; hero.vy = 0; landed = true; }
 
       hero.onGround = landed;
@@ -3114,7 +3218,8 @@ const MODE_FOREST = {
       // заседнало в същата дупка завинаги. Вместо това го пренасяме отвъд
       // нея и продължава напред. Няма загуба, само малко трепване.
       if(hero.y < -0.55){
-        camX += CH * 0.9;
+        const cc = chunkAt(camX + W * 0.22);
+        camX += (cc && cc.pit) ? cc.pit.w + W * 0.10 : CH * 0.5;
         hero.y = 0.55; hero.vy = 0; hero.hurt = 0.6;
         Sfx.tap();
       }
@@ -3192,13 +3297,34 @@ const MODE_FOREST = {
 /* Всяко ниво носи по-дълга дума, повече жълъди за куеста, повече дупки
    и малко повече скорост. Промяната е плавна, за да не се усеща скок. */
 const FOREST_LEVELS = [
-  { id:1, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3, pits:0.00, speed:0.85, modes:["forest"] },
-  { id:2, minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4, pits:0.10, speed:0.92, modes:["forest"] },
-  { id:3, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5, pits:0.15, speed:1.00, zones:0.6, zoneKinds:["color"], modes:["forest"] },
-  { id:4, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6, pits:0.18, speed:1.06, zones:0.7, zoneKinds:["color","sum"], sumMax:5, modes:["forest"] },
-  { id:5, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7, pits:0.20, speed:1.12, zones:0.8, zoneKinds:["sum","color"], sumMax:7, modes:["forest"] },
-  { id:6, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8, pits:0.22, speed:1.18, zones:0.9, zoneKinds:["sum","color"], sumMax:9, modes:["forest"] },
-  { id:7, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9, pits:0.24, speed:1.24, zones:1.0, zoneKinds:["sum","color"], sumMax:10, modes:["forest"] }
+  // ливада: спокойно начало, без дупки, само букви и жълъди
+  { id:1,  theme:"meadow", minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3,
+    pits:0.00, speed:0.85, modes:["forest"] },
+  { id:2,  theme:"meadow", minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4,
+    pits:0.08, speed:0.92, modes:["forest"] },
+  // гора: влизат предизвикателствата
+  { id:3,  theme:"day", minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
+    pits:0.12, speed:1.00, zones:0.6, zoneKinds:["count"], countMax:5, modes:["forest"] },
+  { id:4,  theme:"day", minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
+    pits:0.15, speed:1.04, zones:0.7, zoneKinds:["count","color"], countMax:6, modes:["forest"] },
+  { id:5,  theme:"day", minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
+    pits:0.16, speed:1.08, zones:0.7, zoneKinds:["color","first"], movers:0.25, modes:["forest"] },
+  { id:6,  theme:"day", minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
+    pits:0.18, speed:1.10, zones:0.8, zoneKinds:["first","sum"], sumMax:5, movers:0.3, modes:["forest"] },
+  // есен: сметките растат, площадките се движат по-често
+  { id:7,  theme:"autumn", minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7,
+    pits:0.20, speed:1.14, zones:0.8, zoneKinds:["sum","count"], sumMax:6, countMax:8, movers:0.35, modes:["forest"] },
+  { id:8,  theme:"autumn", minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:7,
+    pits:0.22, speed:1.18, zones:0.85, zoneKinds:["sum","color","first"], sumMax:7, movers:0.4, modes:["forest"] },
+  { id:9,  theme:"autumn", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8,
+    pits:0.24, speed:1.22, zones:0.9, zoneKinds:["sum","count"], sumMax:8, countMax:9, movers:0.45, modes:["forest"] },
+  // нощ: най-трудното, със звезди и светулки
+  { id:10, theme:"night", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9,
+    pits:0.24, speed:1.26, zones:0.9, zoneKinds:["sum","first","color"], sumMax:9, movers:0.5, modes:["forest"] },
+  { id:11, theme:"night", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:10,
+    pits:0.26, speed:1.30, zones:1.0, zoneKinds:["sum","count"], sumMax:10, countMax:10, movers:0.55, modes:["forest"] },
+  { id:12, theme:"night", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:12,
+    pits:0.28, speed:1.34, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.6, modes:["forest"] }
 ];
 
 const CATCH_LEVELS = [

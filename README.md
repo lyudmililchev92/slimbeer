@@ -23,7 +23,7 @@ The game is called *Letterbeer* in Dutch and *Буквик* in Bulgarian.
 | Listen and choose | Hears a word, picks the matching picture |
 | Read and choose | Reads a written word, picks the matching picture |
 
-**Forest — 7 levels, a side-scrolling platformer.** Boekie runs to the right
+**Forest — 12 levels across four seasons, a side-scrolling platformer.** Boekie runs to the right
 on his own; the child's only control is a tap to jump, plus a second jump in
 mid-air. Letters float at jump height, so nothing is picked up by accident —
 every letter is a decision. Platforms to land on, bouncy mushrooms, and water
@@ -32,11 +32,23 @@ gaps. Falling in costs nothing: a gust carries him across and he runs on.
 Each level carries a quest: collect the word **and** a number of acorns. Only
 when both are done does a star-gate grow ahead and end the level.
 
-From level three the forest also holds **challenge spots**. A wooden sign shows
-a sum such as `4 + 4`, and three numbered platforms wait below — land on the
-right one. Elsewhere a sign lights up a colour and three berries hang in the
-air; take the matching one. Both are optional and pay bonus stars, so a child
-who ignores them still finishes the level.
+From level three the forest holds **challenge spots**, marked by a wooden sign
+with three platforms below. Land on the right one:
+
+| Sign shows | The child works out |
+|---|---|
+| Seven acorns drawn on the board | how many — counting |
+| `4 + 4` | the sum |
+| The word's picture | the letter it starts with |
+| A colour | which of three berries matches |
+
+All are optional and pay bonus stars, so a child who ignores them still
+finishes the level.
+
+The seasons change as the levels go: meadow, forest, autumn, then night with
+stars and fireflies. Later levels add platforms that drift up and down. Water
+gaps are sized from the actual jump arc, so every one of them can be cleared
+with a single jump.
 
 **Letter hunt — 6 levels, one 2D game.** Boekie moves along the bottom,
 letters drift down, and the child catches the one the word needs next. No
@@ -125,7 +137,7 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 срички, липсваща буква, с коя буква започва, чуй и избери картинка, прочети и
 избери картинка.
 
-**В гората** — 7 нива, страничен платформинг. Буки тича сам надясно, а
+**В гората** — 12 нива в четири сезона, страничен платформинг. Буки тича сам надясно, а
 детето има едно действие: докосване за скок, плюс втори скок във въздуха.
 Буквите висят на височина за скок, тоест нищо не се взима случайно — всяка
 буква е избор. Има площадки, гъби-пружини и водни дупки. Падането не струва
@@ -134,11 +146,22 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 Всяко ниво носи куест: събери думата **и** определен брой жълъди. Чак когато
 и двете са готови, напред израства дърво със звезда и нивото свършва.
 
-От трето ниво в гората се появяват и **предизвикателства**. На дървена табела
-пише сметка като `4 + 4`, а долу чакат три номерирани площадки — стъпва се на
-вярната. Другаде табелата свети в цвят и висят три плода; взима се същият цвят.
-И двете са по избор и дават бонус звезди, тоест дете, което ги подмине, пак
+От трето ниво се появяват **предизвикателства** — дървена табела и три
+площадки под нея. Стъпва се на вярната:
+
+| На табелата | Детето решава |
+|---|---|
+| Седем нарисувани жълъда | колко са — броене |
+| `4 + 4` | сметката |
+| Картинката на думата | с коя буква започва |
+| Цвят | кой от трите плода е същият |
+
+Всички са по избор и дават бонус звезди, тоест дете, което ги подмине, пак
 завършва нивото.
+
+Сезоните се сменят с нивата: ливада, гора, есен и накрая нощ със звезди и
+светулки. По-късните нива добавят площадки, които се движат нагоре-надолу.
+Дупките с вода са премерени по дъгата на скока — всяка се прескача с един скок.
 
 **Лов на буквите** — 6 нива, 2D игра. Буки се движи долу, буквите падат
 отгоре и детето хваща тази, която е наред. Без таймер, без животи и без край
