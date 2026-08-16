@@ -115,7 +115,7 @@ const MODE_MAKE = {
     let mistakes = 0, done = false;
 
     root.appendChild(h("p", { class:"prompt" },
-      t("promptBuild") + " " + it.total + "?"));
+      t("promptMakeNumber") + " " + it.total + "?"));
     root.appendChild(h("div", { class:"math-stage" },
       h("div", { class:"sum-row" },
         iconRow(it.icon, it.a, "group"),

@@ -246,7 +246,7 @@ const MODE_PHONICS = {
     return {
       maxHints: 2,
       hint(step){
-        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.55 }); return t("hintListenAgain"); }
+        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.55 }); return t("hintSoundAgain"); }
         const right = Array.from(optsEl.children)
           .find(b => b.getAttribute("aria-label") === correct.display);
         if(right) right.classList.add("right");

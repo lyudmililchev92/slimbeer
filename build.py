@@ -230,6 +230,56 @@ def content_report():
     return n, errors
 
 
+def _block_after(src, marker):
+    """Тялото на обект след даден надпис, чрез броене на скоби. Регулярният
+    израз не става: обектите са вложени и не се затварят предвидимо."""
+    i = src.index(marker) + len(marker)
+    i = src.index("{", i)
+    depth, j = 0, i
+    while j < len(src):
+        if src[j] == "{":
+            depth += 1
+        elif src[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return src[i + 1:j]
+        j += 1
+    raise SystemExit("незатворен обект след " + marker)
+
+
+def duplicate_ui_keys():
+    """Езиковият пакет е обикновен обект. Обяви ли се два пъти един ключ,
+    JavaScript мълчи и вторият печели — точно така четенето започна да пита
+    «Как се прави», защото ключ от смятането изяде неговия."""
+    src = read("src/data/languages.js")
+    langs = re.findall(r"^  (\w+): \{", src, re.M)
+    bad = []
+    for lang in langs:
+        block = _block_after(src, "\n  " + lang + ": ")
+        if "ui: {" not in block:
+            bad.append(lang + ": няма ui блок")
+            continue
+        ui = _block_after(block, "ui: ")
+        seen = {}
+        depth = 0
+        for m in re.finditer(r"[{}]|(?:^|[,{]\s*)(\w+)\s*:", ui, re.M):
+            tok = m.group(0)
+            if tok == "{":
+                depth += 1; continue
+            if tok == "}":
+                depth -= 1; continue
+            if depth != 0 or not m.group(1):
+                continue                      # ключ на вложен обект, не наш
+            key = m.group(1)
+            seen[key] = seen.get(key, 0) + 1
+        for key, n in sorted(seen.items()):
+            if n > 1:
+                bad.append(lang + ": ключът «" + key + "» е обявен " + str(n) + " пъти")
+    if len(langs) < 2:
+        bad.append("проверени са само " + str(len(langs)) + " езика — нещо не се разпознава")
+    return bad
+
+
 def name_clashes():
     """Всички файлове живеят в един обхват. Ако две от тях обявят едно и
     също име отгоре, второто мълчаливо изяжда първото — точно това стана
@@ -247,6 +297,13 @@ def name_clashes():
 
 
 def main():
+    dupes = duplicate_ui_keys()
+    if dupes:
+        print("Повторен ключ в езиков пакет:\n")
+        for d in dupes:
+            print("  ✗ " + d)
+        raise SystemExit(1)
+
     clashes = name_clashes()
     if clashes:
         print("Две имена се блъскат в общия обхват:\n")

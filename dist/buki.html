@@ -1731,7 +1731,7 @@ const LANGS = {
       promptOddOne:"Welke hoort er niet bij?", memoryCard:"Kaart",
       hintSortHere:"Deze hoort in dit bakje.", hintOddGroup:"De andere zijn",
       promptShape:"Welke vorm is dit?", promptPattern:"Wat komt hierna?",
-      promptMatch:"Welke groep hoort bij dit getal?", promptBuild:"Hoe maak je",
+      promptMatch:"Welke groep hoort bij dit getal?", promptMakeNumber:"Hoe maak je",
       makes:"is", hintLookAgain:"Kijk nog eens goed.",
       friendUnknown:"Deze ken je nog niet. Speel verder in het bos!",
       friendLives:"Woont in", friendLikes:"Houdt van", friendLetter:"Zijn letter is",
@@ -1750,7 +1750,7 @@ const LANGS = {
       promptSoundOdd:"Welke hoort er niet bij?",
       promptBlend:"Welk woord hoor je?",
       promptSyllableHear:"Welk woord is dit?",
-      hintListenAgain:"Luister nog eens, rustig.",
+      hintSoundAgain:"Luister nog eens, rustig.",
       hintFindLetter:"Zoek de letter",
       promptRead:"Welk plaatje hoort bij dit woord?",
       promptCount:"Hoeveel zie je?", promptAdd:"Hoeveel zijn het er samen?",
@@ -1847,7 +1847,7 @@ const LANGS = {
       promptOddOne:"Кое не е на място?", memoryCard:"Картичка",
       hintSortHere:"Това отива в тази кутия.", hintOddGroup:"Другите са",
       promptShape:"Коя форма е това?", promptPattern:"Какво следва?",
-      promptMatch:"Коя група е това число?", promptBuild:"Как се прави",
+      promptMatch:"Коя група е това число?", promptMakeNumber:"Как се прави",
       makes:"прави", hintLookAgain:"Погледни пак внимателно.",
       friendUnknown:"Този още не си го срещнал. Играй още в гората!",
       friendLives:"Живее в", friendLikes:"Обича", friendLetter:"Буквата му е",
@@ -1866,7 +1866,7 @@ const LANGS = {
       promptSoundOdd:"Коя не е на място?",
       promptBlend:"Коя дума чуваш?",
       promptSyllableHear:"Коя е тази дума?",
-      hintListenAgain:"Чуй пак, бавно.",
+      hintSoundAgain:"Чуй пак, бавно.",
       hintFindLetter:"Търси буквата",
       promptRead:"Коя картинка е думата?",
       promptCount:"Колко виждаш?", promptAdd:"Колко са заедно?",
@@ -2961,7 +2961,7 @@ const MODE_PHONICS = {
     return {
       maxHints: 2,
       hint(step){
-        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.55 }); return t("hintListenAgain"); }
+        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.55 }); return t("hintSoundAgain"); }
         const right = Array.from(optsEl.children)
           .find(b => b.getAttribute("aria-label") === correct.display);
         if(right) right.classList.add("right");
@@ -4497,7 +4497,7 @@ const MODE_MAKE = {
     let mistakes = 0, done = false;
 
     root.appendChild(h("p", { class:"prompt" },
-      t("promptBuild") + " " + it.total + "?"));
+      t("promptMakeNumber") + " " + it.total + "?"));
     root.appendChild(h("div", { class:"math-stage" },
       h("div", { class:"sum-row" },
         iconRow(it.icon, it.a, "group"),
