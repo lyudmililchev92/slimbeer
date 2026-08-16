@@ -73,7 +73,8 @@ function loadContext(files){
     "pickWord", "wordPool", "LEVELS", "setWords",
     "PHONICS", "phonicsPack", "firstSound", "lastSound", "soundSay",
     "buildPhonicsIndex", "pickPhonicsItem", "phonicsCue",
-    "STORIES", "STORY_LEVELS", "pickStory", "storyPack"
+    "STORIES", "STORY_LEVELS", "pickStory", "storyPack",
+    "STROKES", "strokesFor", "hasStrokes", "createStrokeTracker", "strokeCheckpoints"
   ].join(", ") + " };", ctx, { filename: "buki-bundle" });
   return ctx.__api;
 }
@@ -94,6 +95,9 @@ const CORE = [
   "src/games/math/generators.js",
   "__mode-stubs__",
   "src/games/reading/reading.js",
+  "src/games/writing/strokes.js",
+  "src/data/strokes-latin.js",
+  "src/data/strokes-cyrillic.js",
   "src/games/reading/stories.js",
   "src/data/stories-bg.js",
   "src/data/stories-nl.js",
@@ -482,6 +486,111 @@ group("Разказчета");
   }
   ok("всяко ниво връща подходящо разказче", bad.length === 0, bad.slice(0, 3).join(" | "));
   ok("изборът стига до различни разказчета", new Set(seen).size >= 8, String(new Set(seen).size));
+})();
+
+/* ==================================================================== */
+group("Писане — щрихите");
+
+(function(){
+  const bad = [];
+  let letters = 0, strokes = 0;
+  const sets = { latin: api.LANGS.nl.alphabet, cyrillic: api.LANGS.bg.alphabet };
+
+  for(const set in sets){
+    const data = api.STROKES[set];
+    sets[set].forEach(ch => {
+      const st = data[ch];
+      if(!st){ bad.push(set + ": липсва буквата " + ch); return; }
+      letters++;
+      if(!st.length) bad.push(set + "/" + ch + ": без нито един щрих");
+      if(st.length > 6) bad.push(set + "/" + ch + ": повече от шест щриха");
+      st.forEach((pts, i) => {
+        strokes++;
+        const w = set + "/" + ch + " щрих " + (i + 1);
+        if(!Array.isArray(pts) || pts.length < 2) bad.push(w + ": под две точки");
+        (pts || []).forEach(pt => {
+          if(!Array.isArray(pt) || pt.length !== 2) return bad.push(w + ": точка не е [x,y]");
+          if(!(pt[0] >= -0.05 && pt[0] <= 1.05)) bad.push(w + ": x извън платното (" + pt[0].toFixed(2) + ")");
+          if(!(pt[1] >= -0.15 && pt[1] <= 1.05)) bad.push(w + ": y извън платното (" + pt[1].toFixed(2) + ")");
+        });
+        // щрих без дължина няма посока и детето не може да го „мине“
+        let len = 0;
+        for(let k = 1; k < pts.length; k++)
+          len += Math.hypot(pts[k][0] - pts[k-1][0], pts[k][1] - pts[k-1][1]);
+        if(len < 0.12) bad.push(w + ": твърде къс (" + len.toFixed(2) + ")");
+      });
+    });
+    for(const ch in data) if(sets[set].indexOf(ch) < 0) bad.push(set + ": " + ch + " не е в азбуката");
+  }
+
+  ok(letters + " букви и " + strokes + " щриха без нито един проблем",
+     bad.length === 0, bad.slice(0, 4).join(" | "));
+  ok("и двете азбуки са пълни", letters === 56, String(letters));
+})();
+
+/* ==================================================================== */
+group("Писане — проверката на движението");
+
+(function(){
+  const stroke = [[0.2, 0.2], [0.8, 0.8]];       // проста диагонала
+
+  // вярно: тръгва от началото и минава до края
+  let tr = api.createStrokeTracker(stroke);
+  ok("тръгването от началото се приема", tr.begin([0.2, 0.2]) === "ok");
+  for(let i = 0; i <= 20; i++){ const f = i / 20; tr.move([0.2 + 0.6*f, 0.2 + 0.6*f]); }
+  ok("минаването до края се брои", tr.finish() === "done");
+
+  // грешно начало: тръгва от края
+  tr = api.createStrokeTracker(stroke);
+  ok("тръгването от края се отказва", tr.begin([0.8, 0.8]) === "start-wrong");
+
+  // грешна посока: тръгва вярно, но върви назад
+  tr = api.createStrokeTracker(stroke);
+  tr.begin([0.2, 0.2]);
+  for(let i = 0; i <= 20; i++){ const f = i / 20; tr.move([0.2 - 0.15*f, 0.2 - 0.15*f]); }
+  ok("движението назад не завършва щриха", tr.finish() === "short");
+
+  // спиране по средата
+  tr = api.createStrokeTracker(stroke);
+  tr.begin([0.2, 0.2]);
+  for(let i = 0; i <= 10; i++){ const f = i / 20; tr.move([0.2 + 0.6*f, 0.2 + 0.6*f]); }
+  ok("спирането по средата не завършва щриха", tr.finish() === "short");
+
+  // търпимост: криволичещо детско движение пак минава
+  tr = api.createStrokeTracker(stroke);
+  tr.begin([0.23, 0.17]);
+  for(let i = 0; i <= 30; i++){
+    const f = i / 30;
+    tr.move([0.2 + 0.6*f + Math.sin(f * 9) * 0.05, 0.2 + 0.6*f - Math.sin(f * 7) * 0.05]);
+  }
+  ok("криволичещата детска ръка пак минава", tr.finish() === "done");
+
+  // контролните точки покриват целия щрих
+  const cp = api.strokeCheckpoints(stroke, 7);
+  ok("контролните точки са колкото поискаме", cp.length === 7, String(cp.length));
+  ok("първата е началото", Math.abs(cp[0][0] - 0.2) < 1e-6);
+  ok("последната е краят", Math.abs(cp[6][0] - 0.8) < 1e-6);
+
+  // всяка истинска буква може да бъде написана вярно
+  const failed = [];
+  ["latin", "cyrillic"].forEach(set => {
+    for(const ch in api.STROKES[set]){
+      api.STROKES[set][ch].forEach((pts, i) => {
+        const t2 = api.createStrokeTracker(pts);
+        if(t2.begin(pts[0]) !== "ok") return failed.push(set + "/" + ch + "/" + i + ": начало");
+        // движим се плътно по описания път
+        for(let k = 1; k < pts.length; k++){
+          for(let f = 0; f <= 1; f += 0.1){
+            t2.move([pts[k-1][0] + (pts[k][0] - pts[k-1][0]) * f,
+                     pts[k-1][1] + (pts[k][1] - pts[k-1][1]) * f]);
+          }
+        }
+        if(t2.finish() !== "done") failed.push(set + "/" + ch + " щрих " + (i + 1) + ": не се завършва");
+      });
+    }
+  });
+  ok("всеки щрих на всяка буква може да се завърши", failed.length === 0,
+     failed.slice(0, 4).join(" | "));
 })();
 
 /* ==================================================================== */

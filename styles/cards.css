@@ -90,3 +90,27 @@
   font-size:var(--fs-body, 18px); font-weight:var(--fw-bold, 700);
   color:var(--c-primary); letter-spacing:.14em
 }
+
+/* --- писане: два начина ------------------------------------------- */
+.write-tabs{
+  display:flex; gap:8px; justify-content:center; margin-bottom:clamp(8px,1.6vmin,14px)
+}
+.write-tab{
+  display:flex; align-items:center; gap:.45em; cursor:pointer;
+  min-height:var(--touch,48px); padding:.4em 1em; border:none;
+  border-radius:999px; background:#FFF; color:var(--c-ink-soft);
+  font-size:var(--fs-small,15px); font-weight:800;
+  box-shadow:0 2px 8px rgba(42,42,69,.08)
+}
+.write-tab.on{ background:var(--c-primary); color:#FFF }
+.write-tab .tab-icon{ font-size:1.15em }
+
+/* точките показват докъде е стигнало без да се чете нищо */
+.stroke-steps{ display:flex; gap:8px; justify-content:center; margin-top:clamp(6px,1.4vmin,12px) }
+.stroke-dot{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:clamp(26px,5vmin,34px); height:clamp(26px,5vmin,34px);
+  border-radius:50%; background:#EDEAFB; color:var(--c-ink-soft);
+  font-size:var(--fs-small,14px); font-weight:800
+}
+.stroke-dot.on{ background:var(--c-primary); color:#FFF }

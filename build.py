@@ -74,6 +74,10 @@ SOURCES = [
     "src/screens/stars.js",
     "src/screens/parents.js",
     "src/games/writing/tracing.js",
+    "src/games/writing/strokes.js",
+    "src/data/strokes-latin.js",
+    "src/data/strokes-cyrillic.js",
+    "src/games/writing/guided.js",
 
     # свързване
     "src/core/router.js",
@@ -213,7 +217,30 @@ def content_report():
     return n, errors
 
 
+def name_clashes():
+    """Всички файлове живеят в един обхват. Ако две от тях обявят едно и
+    също име отгоре, второто мълчаливо изяжда първото — точно това стана
+    с помощника sLine, кръстен L, който изяде L() за езиковия пакет."""
+    seen, clashes = {}, []
+    pattern = re.compile(r"^(?:const|let|var|function)\s+([A-Za-z_$][\w$]*)", re.M)
+    for name in SOURCES:
+        for m in pattern.finditer(read(name)):
+            ident = m.group(1)
+            if ident in seen and seen[ident] != name:
+                clashes.append(ident + ": " + seen[ident] + " и " + name)
+            else:
+                seen[ident] = name
+    return clashes
+
+
 def main():
+    clashes = name_clashes()
+    if clashes:
+        print("Две имена се блъскат в общия обхват:\n")
+        for c in clashes:
+            print("  ✗ " + c)
+        raise SystemExit(1)
+
     n, errors = content_report()
     if errors:
         print("Съдържанието е счупено:\n")

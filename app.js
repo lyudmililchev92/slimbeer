@@ -649,6 +649,9 @@ const LANGS = {
       restartText:"De niveaus gaan terug naar het begin. Sterren en geleerde woorden blijven.",
       trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT", trackForest:"LETTERBOS",
       trackPhonics:"KLANKEN", trackStories:"VERHALEN",
+      writeFree:"Zelf", writeGuided:"Stap voor stap",
+      guideHint:"Begin bij het bolletje met het cijfer.",
+      guideNext:"Goed! Nu de volgende.",
       storyListenAll:"Voorlezen", storyQuestions:"Vragen",
       hintStoryListen:"Luister nog eens naar het verhaal.",
       hintStoryReRead:"Lees de vraag nog eens.",
@@ -738,6 +741,9 @@ const LANGS = {
       restartText:"Нивата се връщат в началото. Звездите и научените думи остават.",
       trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ", trackForest:"В ГОРАТА",
       trackPhonics:"ЗВУКОВЕ", trackStories:"РАЗКАЗЧЕТА",
+      writeFree:"Сам", writeGuided:"Стъпка по стъпка",
+      guideHint:"Започни от кръгчето с числото.",
+      guideNext:"Браво! Сега следващата.",
       storyListenAll:"Чуй всичко", storyQuestions:"Въпроси",
       hintStoryListen:"Чуй разказчето пак.",
       hintStoryReRead:"Прочети въпроса пак.",
@@ -5048,6 +5054,13 @@ Screens.letter = function(params){
 /* ==== src/screens/write.js ==== */
 Screens.write = function(params){
     const Lt = params.letter;
+    const lang = State.progress.language;
+    /* Два начина на писане. Свободното е за най-малките: важи само дали
+       мастилото е в буквата. Воденото пази и реда на щриховете. То се
+       предлага само за букви, за които има описани щрихи. */
+    const canGuide = hasStrokes(Lt, lang);
+    let mode = (params.mode === "guided" && canGuide) ? "guided" : "free";
+
     const screen = h("section", { class:"screen" });
     screen.appendChild(h("div", { class:"page-title" },
       backButton(() => Router.go("letter", { letter:Lt })),
@@ -5055,51 +5068,111 @@ Screens.write = function(params){
     ));
 
     const body = h("div", { class:"scroll-area", style:{ textAlign:"center" } });
+
+    /* Превключвател между двата начина — с икони, не с обяснение. */
+    if(canGuide){
+      const tabs = h("div", { class:"write-tabs", role:"tablist" });
+      const tab = (id, icon, key) => {
+        const b = h("button", { class:"write-tab" + (mode === id ? " on" : ""), type:"button",
+                                role:"tab", "aria-selected": String(mode === id) },
+          h("span", { class:"tab-icon" }, icon), t(key));
+        b.addEventListener("click", () => {
+          if(mode === id) return;
+          Sfx.tap();
+          Router.go("write", { letter:Lt, mode:id });
+        });
+        return b;
+      };
+      tabs.append(tab("free", "🖍️", "writeFree"), tab("guided", "①", "writeGuided"));
+      body.appendChild(tabs);
+    }
+
     const wrap = h("div", { class:"write-wrap" });
-    const guide = h("canvas");   // пунктирният шаблон
+    const guide = h("canvas");   // шаблонът
     const ink   = h("canvas");   // рисунката на детето
     wrap.append(guide, ink);
     body.appendChild(wrap);
 
-    const msg = h("p", { class:"prompt", style:{ marginTop:"12px" } }, t("traceHint"));
+    const msg = h("p", { class:"prompt", style:{ marginTop:"12px" } },
+      mode === "guided" ? t("guideHint") : t("traceHint"));
     body.appendChild(msg);
 
-    const tracer = createLetterTracer(wrap, guide, ink, Lt);
+    let tracer, actions;
 
-    const clearBtn = h("button", { class:"btn btn-ghost", type:"button" }, "🧽 " + t("clear"));
-    clearBtn.addEventListener("click", () => { Sfx.tap(); tracer.clear(); msg.textContent = t("traceHint"); });
-    const showBtn = h("button", { class:"btn btn-warm", type:"button" }, "👀 " + t("show"));
-    showBtn.addEventListener("click", () => { Sfx.tap(); tracer.demo(); });
-    const doneBtn = h("button", { class:"btn btn-success", type:"button" }, "✅ " + t("done"));
-    doneBtn.addEventListener("click", () => {
-      const r = tracer.evaluate();
-      if(r.status === "empty"){
-        msg.textContent = t("traceHint");
-        Sfx.tap();
-        return;
-      }
-      if(r.status !== "ok"){
-        // Не е грешка, а „още веднъж“: буквата остава, за да се види къде
-        // е излязла, и детето пробва пак веднага.
-        Sfx.wrong();
-        shakeEl(wrap);
-        msg.textContent = r.status === "outside" ? t("traceOutside") : t("traceIncomplete");
-        msg.classList.add("try-again");
-        setTimeout(() => msg.classList.remove("try-again"), 1200);
-        return;
-      }
-      let stars = 1;
-      if(r.precision > 0.82 && r.coverage > 0.50) stars = 2;
-      if(r.precision > 0.90 && r.coverage > 0.65) stars = 3;
-      addStars(stars);
-      LP("words").learnedLetters[Lt] = (LP("words").learnedLetters[Lt] || 0) + 1;
-      Store.save();
-      Sfx.success();
-      msg.textContent = t("wellDone") + " " + "⭐".repeat(stars);
-      Speech.speak(t("wellDone"));
-    });
-    body.appendChild(h("div", { class:"write-actions" }, clearBtn, showBtn, doneBtn));
+    if(mode === "guided"){
+      tracer = createGuidedTracer(wrap, guide, ink, Lt, lang);
 
+      const steps = h("div", { class:"stroke-steps", "aria-live":"polite" });
+      const paintSteps = (i, n) => {
+        steps.innerHTML = "";
+        for(let k = 0; k < n; k++)
+          steps.appendChild(h("span", { class:"stroke-dot" + (k < i ? " on" : "") }, String(k + 1)));
+      };
+      paintSteps(0, tracer.strokeCount);
+      body.insertBefore(steps, msg);
+
+      tracer.onProgress((i, n) => {
+        paintSteps(i, n);
+        if(i < n){ msg.textContent = t("guideNext"); return; }
+        // всички щрихове са минати в правилния ред
+        const stars = 3;
+        addStars(stars);
+        LP("words").learnedLetters[Lt] = (LP("words").learnedLetters[Lt] || 0) + 1;
+        Mastery.record(writingSkill(Lt, lang), true);
+        Store.save();
+        Sfx.success();
+        msg.textContent = t("wellDone") + " " + "⭐".repeat(stars);
+        Speech.speak(t("wellDone"));
+      });
+
+      const again = h("button", { class:"btn btn-ghost", type:"button" }, "🧽 " + t("clear"));
+      again.addEventListener("click", () => { Sfx.tap(); tracer.reset(); paintSteps(0, tracer.strokeCount); msg.textContent = t("guideHint"); });
+      const show = h("button", { class:"btn btn-warm", type:"button" }, "👀 " + t("show"));
+      show.addEventListener("click", () => { Sfx.tap(); tracer.showNext(); });
+      actions = h("div", { class:"write-actions" }, again, show);
+
+    } else {
+      tracer = createLetterTracer(wrap, guide, ink, Lt);
+
+      const clearBtn = h("button", { class:"btn btn-ghost", type:"button" }, "🧽 " + t("clear"));
+      clearBtn.addEventListener("click", () => { Sfx.tap(); tracer.clear(); msg.textContent = t("traceHint"); });
+      const showBtn = h("button", { class:"btn btn-warm", type:"button" }, "👀 " + t("show"));
+      showBtn.addEventListener("click", () => { Sfx.tap(); tracer.demo(); });
+      const doneBtn = h("button", { class:"btn btn-success", type:"button" }, "✅ " + t("done"));
+      doneBtn.addEventListener("click", () => {
+        const r = tracer.evaluate();
+        if(r.status === "empty"){
+          msg.textContent = t("traceHint");
+          Sfx.tap();
+          return;
+        }
+        if(r.status !== "ok"){
+          // Не е грешка, а „още веднъж“: буквата остава, за да се види къде
+          // е излязла, и детето пробва пак веднага.
+          Sfx.wrong();
+          shakeEl(wrap);
+          msg.textContent = r.status === "outside" ? t("traceOutside") : t("traceIncomplete");
+          msg.classList.add("try-again");
+          setTimeout(() => msg.classList.remove("try-again"), 1200);
+          Mastery.record(writingSkill(Lt, lang), false);
+          Store.save();
+          return;
+        }
+        let stars = 1;
+        if(r.precision > 0.82 && r.coverage > 0.50) stars = 2;
+        if(r.precision > 0.90 && r.coverage > 0.65) stars = 3;
+        addStars(stars);
+        LP("words").learnedLetters[Lt] = (LP("words").learnedLetters[Lt] || 0) + 1;
+        Mastery.record(writingSkill(Lt, lang), true);
+        Store.save();
+        Sfx.success();
+        msg.textContent = t("wellDone") + " " + "⭐".repeat(stars);
+        Speech.speak(t("wellDone"));
+      });
+      actions = h("div", { class:"write-actions" }, clearBtn, showBtn, doneBtn);
+    }
+
+    body.appendChild(actions);
     screen.appendChild(body);
     screen._onMounted = () => tracer.layout();
     screen._cleanup = () => tracer.destroy();
@@ -5572,6 +5645,458 @@ function createLetterTracer(wrap, guideCanvas, inkCanvas, letter){
       return { status, precision, coverage };
     },
     destroy(){ window.removeEventListener("resize", onResize); if(ro) ro.disconnect(); }
+  };
+}
+
+/* ==== src/games/writing/strokes.js ==== */
+/* =========================================================================
+ * ЩРИХИ — от какви движения се състои буквата
+ * -------------------------------------------------------------------------
+ * Свободното рисуване проверява само дали мастилото е в буквата. Дете,
+ * което пише „А“ отдолу нагоре, минава. Тук се пази и редът: откъде
+ * започва щрихът, накъде върви и къде свършва.
+ *
+ * Как е описан щрихът: списък от точки в квадрат 0..1, y расте надолу.
+ * Редът на точките е посоката на движение. Първата точка е началото,
+ * последната — краят.
+ *
+ *     A: [ sLine(.5,.06, .14,.94), sLine(.5,.06, .86,.94), sLine(.24,.64, .76,.64) ]
+ *
+ * Проверката е нарочно търпелива. Дете на пет няма моторика за точност,
+ * а целта е да усвои движението, не да улучи пиксел.
+ * ========================================================================= */
+
+const STROKES = { latin: {}, cyrillic: {} };
+
+/** Права: две точки. */
+function sLine(x1, y1, x2, y2){ return [[x1, y1], [x2, y2]]; }
+
+/** Дъга в градуси, 0° е вдясно, ъгълът расте по часовниковата стрелка. */
+function sArc(cx, cy, rx, ry, from, to, steps){
+  const n = steps || 10, out = [];
+  for(let i = 0; i <= n; i++){
+    const a = (from + (to - from) * (i / n)) * Math.PI / 180;
+    out.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]);
+  }
+  return out;
+}
+
+/** Чупена линия от изредени числа: sPath(x1,y1, x2,y2, x3,y3, …). */
+function sPath(){
+  const out = [];
+  for(let i = 0; i + 1 < arguments.length; i += 2) out.push([arguments[i], arguments[i + 1]]);
+  return out;
+}
+
+/* ---------------------------------------------------------------------
+ * Проверка на един щрих
+ * ------------------------------------------------------------------- */
+
+const STROKE_TOLERANCE = 0.16;    // част от страната на платното
+const STROKE_START_TOLERANCE = 0.22;
+
+/** Дели щриха на равномерни контролни точки по дължина. */
+function strokeCheckpoints(points, count){
+  const n = count || 7;
+  let total = 0;
+  const segs = [];
+  for(let i = 1; i < points.length; i++){
+    const d = Math.hypot(points[i][0] - points[i-1][0], points[i][1] - points[i-1][1]);
+    segs.push(d); total += d;
+  }
+  if(!total) return [points[0]];
+  const out = [];
+  for(let k = 0; k < n; k++){
+    let want = (total * k) / (n - 1), i = 0;
+    while(i < segs.length && want > segs[i]){ want -= segs[i]; i++; }
+    if(i >= segs.length) { out.push(points[points.length - 1]); continue; }
+    const f = segs[i] ? want / segs[i] : 0;
+    out.push([points[i][0] + (points[i+1][0] - points[i][0]) * f,
+              points[i][1] + (points[i+1][1] - points[i][1]) * f]);
+  }
+  return out;
+}
+
+/* Следи един щрих, докато детето го рисува. Не наказва: ако тръгне от
+   грешното място или се отклони, щрихът просто не се брои и се опитва пак. */
+function createStrokeTracker(points, opts){
+  const o = opts || {};
+  const checks = strokeCheckpoints(points, o.checkpoints || 7);
+  const tol = o.tolerance || STROKE_TOLERANCE;
+  const startTol = o.startTolerance || STROKE_START_TOLERANCE;
+  let next = 0, started = false, strayed = 0;
+
+  const near = (p, q, r) => Math.hypot(p[0] - q[0], p[1] - q[1]) <= r;
+
+  return {
+    checkpoints: checks,
+    get progress(){ return next / (checks.length - 1 || 1); },
+    get started(){ return started; },
+    done(){ return next >= checks.length; },
+
+    /** Връща "start-wrong" | "ok" при докосване. */
+    begin(p){
+      if(!near(p, checks[0], startTol)) return "start-wrong";
+      started = true; next = 1; strayed = 0;
+      return "ok";
+    },
+
+    /** Движение. Контролните точки се минават по ред — това е посоката. */
+    move(p){
+      if(!started) return "idle";
+      // разрешаваме прескачане най-много на една точка напред, за да не
+      // блокираме бърза ръка, но не и скачане до края
+      for(let k = next; k < Math.min(next + 2, checks.length); k++){
+        if(near(p, checks[k], tol)){ next = k + 1; strayed = 0; return this.done() ? "done" : "ok"; }
+      }
+      // далеч от следващата точка — брои се, но не спира детето
+      if(!near(p, checks[Math.min(next, checks.length - 1)], tol * 2.4)) strayed++;
+      return strayed > 40 ? "stray" : "ok";
+    },
+
+    /** Вдигане на пръста. Изисква да е стигнал до края. */
+    finish(){ return this.done() ? "done" : "short"; },
+
+    reset(){ next = 0; started = false; strayed = 0; }
+  };
+}
+
+/** Щрихове за буква, ако ги има. Азбуките се различават. */
+function strokesFor(letter, lang){
+  const set = (lang || State.progress.language) === "bg" ? STROKES.cyrillic : STROKES.latin;
+  return set[letter] || null;
+}
+
+function hasStrokes(letter, lang){ return !!strokesFor(letter, lang); }
+
+/* ==== src/data/strokes-latin.js ==== */
+/* =========================================================================
+ * ЩРИХИ — ЛАТИНИЦА (главни букви)
+ * -------------------------------------------------------------------------
+ * Редът на щриховете следва това, което се учи в нидерландското училище:
+ * отгоре надолу, отляво надясно, вертикалата преди хоризонталата.
+ *
+ * Координатите са в квадрат 0..1, y расте надолу. Буквата стои горе-долу
+ * между y = 0.08 и y = 0.94, за да остане поле за пръст.
+ *
+ * Помощниците sLine, sArc и sPath идват от strokes.js.
+ * ========================================================================= */
+
+STROKES.latin = {
+  A: [ sLine(0.50,0.08, 0.15,0.94), sLine(0.50,0.08, 0.85,0.94), sLine(0.26,0.64, 0.74,0.64) ],
+  B: [ sLine(0.24,0.08, 0.24,0.94),
+       sPath(0.24,0.08, 0.62,0.10, 0.72,0.28, 0.62,0.48, 0.24,0.51),
+       sPath(0.24,0.51, 0.66,0.54, 0.78,0.73, 0.64,0.92, 0.24,0.94) ],
+  C: [ sArc(0.54,0.51, 0.34,0.43, -35, -325, 14) ],
+  D: [ sLine(0.24,0.08, 0.24,0.94),
+       sPath(0.24,0.08, 0.62,0.12, 0.78,0.51, 0.62,0.90, 0.24,0.94) ],
+  E: [ sLine(0.26,0.08, 0.26,0.94), sLine(0.26,0.08, 0.76,0.08),
+       sLine(0.26,0.51, 0.68,0.51), sLine(0.26,0.94, 0.76,0.94) ],
+  F: [ sLine(0.26,0.08, 0.26,0.94), sLine(0.26,0.08, 0.76,0.08), sLine(0.26,0.48, 0.66,0.48) ],
+  G: [ sArc(0.54,0.51, 0.34,0.43, -35, -325, 14), sPath(0.71,0.51, 0.86,0.51), sLine(0.86,0.51, 0.86,0.78) ],
+  H: [ sLine(0.24,0.08, 0.24,0.94), sLine(0.76,0.08, 0.76,0.94), sLine(0.24,0.51, 0.76,0.51) ],
+  I: [ sLine(0.50,0.08, 0.50,0.94), sLine(0.28,0.08, 0.72,0.08), sLine(0.28,0.94, 0.72,0.94) ],
+  J: [ sLine(0.66,0.08, 0.66,0.72), sArc(0.44,0.72, 0.22,0.20, 0, 130, 8) ],
+  K: [ sLine(0.26,0.08, 0.26,0.94), sLine(0.74,0.08, 0.28,0.53), sLine(0.38,0.45, 0.78,0.94) ],
+  L: [ sLine(0.28,0.08, 0.28,0.94), sLine(0.28,0.94, 0.76,0.94) ],
+  M: [ sLine(0.20,0.94, 0.20,0.08), sLine(0.20,0.08, 0.50,0.58),
+       sLine(0.50,0.58, 0.80,0.08), sLine(0.80,0.08, 0.80,0.94) ],
+  N: [ sLine(0.24,0.94, 0.24,0.08), sLine(0.24,0.08, 0.76,0.94), sLine(0.76,0.94, 0.76,0.08) ],
+  O: [ sArc(0.50,0.51, 0.32,0.43, -90, 270, 16) ],
+  P: [ sLine(0.26,0.08, 0.26,0.94),
+       sPath(0.26,0.08, 0.66,0.11, 0.76,0.31, 0.64,0.52, 0.26,0.55) ],
+  Q: [ sArc(0.50,0.48, 0.32,0.40, -90, 270, 16), sLine(0.62,0.72, 0.84,0.96) ],
+  R: [ sLine(0.26,0.08, 0.26,0.94),
+       sPath(0.26,0.08, 0.66,0.11, 0.76,0.31, 0.64,0.52, 0.26,0.55),
+       sLine(0.46,0.55, 0.78,0.94) ],
+  S: [ sPath(0.76,0.19, 0.52,0.08, 0.28,0.18, 0.34,0.38, 0.62,0.52,
+         0.76,0.68, 0.68,0.88, 0.42,0.94, 0.24,0.82) ],
+  T: [ sLine(0.50,0.08, 0.50,0.94), sLine(0.20,0.08, 0.80,0.08) ],
+  U: [ sPath(0.24,0.08, 0.24,0.66), sArc(0.50,0.66, 0.26,0.28, 180, 360, 10), sPath(0.76,0.66, 0.76,0.08) ],
+  V: [ sLine(0.20,0.08, 0.50,0.94), sLine(0.50,0.94, 0.80,0.08) ],
+  W: [ sLine(0.14,0.08, 0.32,0.94), sLine(0.32,0.94, 0.50,0.36),
+       sLine(0.50,0.36, 0.68,0.94), sLine(0.68,0.94, 0.86,0.08) ],
+  X: [ sLine(0.22,0.08, 0.78,0.94), sLine(0.78,0.08, 0.22,0.94) ],
+  Y: [ sLine(0.22,0.08, 0.50,0.50), sLine(0.78,0.08, 0.50,0.50), sLine(0.50,0.50, 0.50,0.94) ],
+  Z: [ sLine(0.22,0.08, 0.78,0.08), sLine(0.78,0.08, 0.22,0.94), sLine(0.22,0.94, 0.78,0.94) ]
+};
+
+/* ==== src/data/strokes-cyrillic.js ==== */
+/* =========================================================================
+ * ЩРИХИ — КИРИЛИЦА (главни букви)
+ * -------------------------------------------------------------------------
+ * Отделен файл от латиницата нарочно: буквите не са същите, а и там,
+ * където си приличат (А, Е, К, М, О, Р, С, Т, Х), редът на щриховете в
+ * българското училище невинаги съвпада с нидерландския.
+ *
+ * Координатите са в квадрат 0..1, y расте надолу.
+ * ========================================================================= */
+
+STROKES.cyrillic = {
+  "А": [ sLine(0.50,0.08, 0.15,0.94), sLine(0.50,0.08, 0.85,0.94), sLine(0.26,0.66, 0.74,0.66) ],
+  "Б": [ sLine(0.26,0.08, 0.26,0.94), sLine(0.26,0.08, 0.72,0.08),
+         sPath(0.26,0.48, 0.64,0.50, 0.76,0.71, 0.62,0.92, 0.26,0.94) ],
+  "В": [ sLine(0.26,0.08, 0.26,0.94),
+         sPath(0.26,0.08, 0.62,0.10, 0.72,0.28, 0.60,0.48, 0.26,0.51),
+         sPath(0.26,0.51, 0.66,0.54, 0.76,0.73, 0.62,0.92, 0.26,0.94) ],
+  "Г": [ sLine(0.28,0.08, 0.28,0.94), sLine(0.28,0.08, 0.74,0.08) ],
+  "Д": [ sPath(0.30,0.16, 0.30,0.50, 0.24,0.82), sLine(0.30,0.16, 0.72,0.16),
+         sLine(0.72,0.16, 0.72,0.82), sLine(0.16,0.82, 0.86,0.82),
+         sLine(0.26,0.82, 0.26,0.96), sLine(0.78,0.82, 0.78,0.96) ],
+  "Е": [ sLine(0.28,0.08, 0.28,0.94), sLine(0.28,0.08, 0.76,0.08),
+         sLine(0.28,0.51, 0.68,0.51), sLine(0.28,0.94, 0.76,0.94) ],
+  "Ж": [ sLine(0.50,0.08, 0.50,0.94), sLine(0.50,0.44, 0.16,0.08), sLine(0.50,0.44, 0.84,0.08),
+         sLine(0.50,0.56, 0.16,0.94), sLine(0.50,0.56, 0.84,0.94) ],
+  "З": [ sPath(0.26,0.18, 0.48,0.07, 0.70,0.16, 0.62,0.38, 0.44,0.46),
+         sPath(0.44,0.46, 0.68,0.52, 0.76,0.74, 0.56,0.94, 0.28,0.86) ],
+  "И": [ sLine(0.24,0.94, 0.24,0.08), sLine(0.24,0.08, 0.76,0.94), sLine(0.76,0.94, 0.76,0.08) ],
+  "Й": [ sLine(0.24,0.94, 0.24,0.08), sLine(0.24,0.08, 0.76,0.94), sLine(0.76,0.94, 0.76,0.08),
+         sArc(0.50,-0.02, 0.20,0.12, 20, 160, 8) ],
+  "К": [ sLine(0.26,0.08, 0.26,0.94), sLine(0.74,0.08, 0.28,0.53), sLine(0.38,0.45, 0.78,0.94) ],
+  "Л": [ sPath(0.22,0.94, 0.30,0.50, 0.38,0.08), sLine(0.38,0.08, 0.72,0.08), sLine(0.72,0.08, 0.72,0.94) ],
+  "М": [ sLine(0.20,0.94, 0.20,0.08), sLine(0.20,0.08, 0.50,0.58),
+         sLine(0.50,0.58, 0.80,0.08), sLine(0.80,0.08, 0.80,0.94) ],
+  "Н": [ sLine(0.24,0.08, 0.24,0.94), sLine(0.76,0.08, 0.76,0.94), sLine(0.24,0.51, 0.76,0.51) ],
+  "О": [ sArc(0.50,0.51, 0.32,0.43, -90, 270, 16) ],
+  "П": [ sLine(0.24,0.94, 0.24,0.08), sLine(0.24,0.08, 0.76,0.08), sLine(0.76,0.08, 0.76,0.94) ],
+  "Р": [ sLine(0.26,0.08, 0.26,0.94),
+         sPath(0.26,0.08, 0.66,0.11, 0.76,0.31, 0.64,0.52, 0.26,0.55) ],
+  "С": [ sArc(0.54,0.51, 0.34,0.43, -35, -325, 14) ],
+  "Т": [ sLine(0.50,0.08, 0.50,0.94), sLine(0.20,0.08, 0.80,0.08) ],
+  "У": [ sLine(0.22,0.08, 0.52,0.52), sPath(0.80,0.08, 0.52,0.52, 0.38,0.96) ],
+  "Ф": [ sLine(0.50,0.04, 0.50,0.96), sArc(0.50,0.50, 0.26,0.34, -90, 270, 14) ],
+  "Х": [ sLine(0.22,0.08, 0.78,0.94), sLine(0.78,0.08, 0.22,0.94) ],
+  "Ц": [ sLine(0.24,0.08, 0.24,0.86), sLine(0.70,0.08, 0.70,0.86),
+         sLine(0.18,0.86, 0.78,0.86), sLine(0.74,0.86, 0.74,0.98) ],
+  "Ч": [ sPath(0.26,0.08, 0.26,0.44, 0.72,0.48), sLine(0.72,0.08, 0.72,0.94) ],
+  "Ш": [ sLine(0.18,0.08, 0.18,0.90), sLine(0.50,0.08, 0.50,0.90), sLine(0.82,0.08, 0.82,0.90),
+         sLine(0.14,0.90, 0.86,0.90) ],
+  "Щ": [ sLine(0.16,0.08, 0.16,0.86), sLine(0.46,0.08, 0.46,0.86), sLine(0.76,0.08, 0.76,0.86),
+         sLine(0.12,0.86, 0.82,0.86), sLine(0.80,0.86, 0.80,0.98) ],
+  "Ъ": [ sLine(0.34,0.08, 0.34,0.94),
+         sPath(0.34,0.46, 0.68,0.48, 0.78,0.70, 0.64,0.92, 0.34,0.94) ],
+  "Ь": [ sLine(0.34,0.08, 0.34,0.94),
+         sPath(0.34,0.46, 0.68,0.48, 0.78,0.70, 0.64,0.92, 0.34,0.94) ],
+  "Ю": [ sLine(0.24,0.08, 0.24,0.94), sLine(0.24,0.51, 0.44,0.51),
+         sArc(0.66,0.51, 0.22,0.42, -90, 270, 14) ],
+  "Я": [ sPath(0.72,0.08, 0.34,0.10, 0.24,0.30, 0.36,0.50, 0.72,0.52),
+         sLine(0.72,0.08, 0.72,0.94), sLine(0.52,0.52, 0.24,0.94) ]
+};
+
+/* ==== src/games/writing/guided.js ==== */
+/* =========================================================================
+ * ВОДЕНО ПИСАНЕ
+ * -------------------------------------------------------------------------
+ * Свободното рисуване проверява дали мастилото е в буквата. Тук се води и
+ * ръката: щрих по щрих, всеки със своето начало, посока и край.
+ *
+ * Детето не чете, затова указанието е рисувано: номер в кръгче на
+ * началото, пунктир по пътя и стрелка накрая. Текущият щрих е цветен,
+ * следващите са бледи, готовите остават нарисувани.
+ *
+ * Проверката е търпелива по проект. Ако тръгне от грешното място или
+ * спре по средата, щрихът просто не се брои и се опитва пак — без звук
+ * на грешка, без червено, без броене на провали.
+ * ========================================================================= */
+
+function createGuidedTracer(wrap, guideCanvas, inkCanvas, letter, lang){
+  const gctx = guideCanvas.getContext("2d");
+  const ictx = inkCanvas.getContext("2d");
+  const strokes = strokesFor(letter, lang) || [];
+  let size = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let index = 0;                 // кой щрих се пише сега
+  let tracker = null;
+  let drawing = false;
+  let lastPoint = null;
+  let onProgress = null;
+
+  function layout(){
+    const box = Math.min(wrap.clientWidth, wrap.clientHeight);
+    if(!box) return false;
+    size = box;
+    [guideCanvas, inkCanvas].forEach(c => {
+      c.width = box * dpr; c.height = box * dpr;
+      c.style.width = box + "px"; c.style.height = box + "px";
+      const ctx = c.getContext("2d");
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    });
+    redraw();
+    return true;
+  }
+
+  const toPx = (p) => [p[0] * size, p[1] * size];
+
+  function pathOf(points){
+    gctx.beginPath();
+    points.forEach((p, i) => {
+      const [x, y] = toPx(p);
+      if(i) gctx.lineTo(x, y); else gctx.moveTo(x, y);
+    });
+  }
+
+  /* Стрелка накрая: детето вижда накъде върви щрихът, без да чете. */
+  function arrowHead(from, to, color){
+    const [x1, y1] = toPx(from), [x2, y2] = toPx(to);
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    const s = Math.max(10, size * 0.045);
+    gctx.fillStyle = color;
+    gctx.beginPath();
+    gctx.moveTo(x2, y2);
+    gctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+    gctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+    gctx.closePath();
+    gctx.fill();
+  }
+
+  function startDot(p, n, color){
+    const [x, y] = toPx(p);
+    const r = Math.max(12, size * 0.055);
+    gctx.fillStyle = color;
+    gctx.beginPath(); gctx.arc(x, y, r, 0, Math.PI * 2); gctx.fill();
+    gctx.fillStyle = "#FFF";
+    gctx.font = "800 " + Math.round(r * 1.15) + "px " + getComputedStyle(document.body).fontFamily;
+    gctx.textAlign = "center"; gctx.textBaseline = "middle";
+    gctx.fillText(String(n), x, y + r * 0.06);
+  }
+
+  function redraw(){
+    if(!size) return;
+    gctx.clearRect(0, 0, size, size);
+    gctx.lineCap = "round"; gctx.lineJoin = "round";
+
+    strokes.forEach((pts, i) => {
+      const done = i < index;
+      const active = i === index;
+      gctx.lineWidth = Math.max(10, size * 0.055);
+      gctx.setLineDash(active ? [size * 0.03, size * 0.035] : []);
+      gctx.strokeStyle = done ? "rgba(125,111,240,.30)"
+                       : active ? "#C9C1FF" : "rgba(42,42,69,.10)";
+      pathOf(pts);
+      gctx.stroke();
+      gctx.setLineDash([]);
+
+      // Номерът се рисува само на текущия щрих. При букви като Ж няколко
+      // щриха тръгват от почти същата точка и кръгчетата се трупаха едно
+      // върху друго — ставаше по-объркващо, отколкото полезно.
+      if(active){
+        arrowHead(pts[pts.length - 2] || pts[0], pts[pts.length - 1], "#8E82E8");
+        startDot(pts[0], i + 1, "#7D6FF0");
+      }
+    });
+  }
+
+  function pos(ev){
+    const r = inkCanvas.getBoundingClientRect();
+    return [(ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height];
+  }
+
+  function inkSegment(from, to){
+    ictx.strokeStyle = "#6C5CE7";
+    ictx.lineWidth = Math.max(12, size * 0.062);
+    ictx.lineCap = "round"; ictx.lineJoin = "round";
+    ictx.beginPath();
+    const a = toPx(from), b = toPx(to);
+    ictx.moveTo(a[0], a[1]); ictx.lineTo(b[0], b[1]);
+    ictx.stroke();
+  }
+
+  function beginStroke(ev){
+    if(index >= strokes.length) return;
+    const p = pos(ev);
+    tracker = createStrokeTracker(strokes[index]);
+    const res = tracker.begin(p);
+    if(res === "start-wrong"){
+      // Не е грешка — просто показваме пак откъде се тръгва.
+      pulseStart();
+      tracker = null;
+      return;
+    }
+    drawing = true;
+    lastPoint = p;
+    try{ inkCanvas.setPointerCapture(ev.pointerId); }catch(e){}
+  }
+
+  function moveStroke(ev){
+    if(!drawing || !tracker) return;
+    const p = pos(ev);
+    inkSegment(lastPoint, p);
+    lastPoint = p;
+    tracker.move(p);
+  }
+
+  function endStroke(){
+    if(!drawing){ return; }
+    drawing = false;
+    const res = tracker ? tracker.finish() : "short";
+    if(res === "done"){
+      index += 1;
+      Sfx.place();
+      redraw();
+      if(onProgress) onProgress(index, strokes.length);
+    } else {
+      // недовършен щрих: изтриваме опита и каним пак, без наказание
+      clearInk();
+      redrawDoneStrokes();
+      pulseStart();
+    }
+    tracker = null;
+  }
+
+  function clearInk(){ ictx.clearRect(0, 0, size, size); }
+
+  /* Готовите щрихове остават нарисувани, за да се вижда напредъкът. */
+  function redrawDoneStrokes(){
+    for(let i = 0; i < index; i++){
+      const pts = strokes[i];
+      for(let k = 1; k < pts.length; k++) inkSegment(pts[k-1], pts[k]);
+    }
+  }
+
+  function pulseStart(){
+    if(index >= strokes.length) return;
+    const pts = strokes[index];
+    let t = 0;
+    const step = () => {
+      if(t > 26) { redraw(); return; }
+      redraw();
+      const [x, y] = toPx(pts[0]);
+      const r = Math.max(12, size * 0.055) * (1 + Math.sin(t * 0.4) * 0.35);
+      gctx.strokeStyle = "#FF9DBB"; gctx.lineWidth = 4;
+      gctx.beginPath(); gctx.arc(x, y, r * 1.5, 0, Math.PI * 2); gctx.stroke();
+      t++;
+      requestAnimationFrame(step);
+    };
+    if(REDUCED_MOTION) redraw(); else step();
+  }
+
+  inkCanvas.addEventListener("pointerdown", (e) => { e.preventDefault(); beginStroke(e); });
+  inkCanvas.addEventListener("pointermove", moveStroke);
+  inkCanvas.addEventListener("pointerup", endStroke);
+  inkCanvas.addEventListener("pointercancel", endStroke);
+  inkCanvas.addEventListener("pointerleave", endStroke);
+
+  return {
+    layout,
+    strokeCount: strokes.length,
+    get index(){ return index; },
+    done(){ return index >= strokes.length; },
+    onProgress(fn){ onProgress = fn; },
+    /** Подсказка: показва движението на текущия щрих. */
+    showNext(){
+      if(index >= strokes.length) return;
+      const pts = strokes[index];
+      let k = 0;
+      const step = () => {
+        if(k >= pts.length){ setTimeout(() => { clearInk(); redrawDoneStrokes(); }, 500); return; }
+        if(k) inkSegment(pts[k-1], pts[k]);
+        k++;
+        if(REDUCED_MOTION) step(); else setTimeout(step, 90);
+      };
+      clearInk(); redrawDoneStrokes(); step();
+    },
+    reset(){ index = 0; tracker = null; clearInk(); redraw(); },
+    destroy(){}
   };
 }
 
