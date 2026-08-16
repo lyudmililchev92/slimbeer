@@ -11,13 +11,19 @@ function wordPool(level){
     w.difficulty <= level.maxDifficulty
   );
 }
+/* Изборът гледа три неща наведнъж: да не се повтаря скоро показаното,
+   да върви към ненаучените думи и да се навърта около буквите, които на
+   детето не му се удават. Последното е леко — то не бива да усеща, че го
+   разпитват за Ж, а просто да среща Ж по-често. */
 function pickWord(level){
   const pool = wordPool(level);
   if(!pool.length) return rand(WORDS);
   let cands = pool.filter(w => State.session.recent.indexOf(w.word) < 0);
   if(!cands.length) cands = pool;
   const unsolved = cands.filter(w => !LP().words[w.word]);
-  return rand(unsolved.length ? unsolved : cands);
+  const from = unsolved.length ? unsolved : cands;
+  const lang = State.progress.language;
+  return weightedPick(from, w => wordWeight(w, lang)) || rand(from);
 }
 function pickMode(level, word, forceBuild){
   if(forceBuild) return MODES.build;

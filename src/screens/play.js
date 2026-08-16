@@ -290,7 +290,7 @@ const Play = {
       this.showSuccess(r.item, 3, false, true);
       return;
     }
-    const res = recordResult(r.item, mistakes, r.hintStep);
+    const res = recordResult(r.item, mistakes, r.hintStep, r.mode && r.mode.id);
     State.session.solvedInSession += 1;
     this.updateTop();
     this.els.starsChip.classList.remove("bump");

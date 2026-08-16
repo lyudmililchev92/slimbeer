@@ -78,3 +78,15 @@
 .debug-panel button{background:#2E2E4C;color:#fff;border-radius:8px;padding:4px 9px;margin:2px;font-size:12px}
 
 /* =========================================================================
+
+/* Обобщение на уменията в екрана за родители. Букви, не числа. */
+.skills-card{ display:flex; flex-direction:column; gap:var(--sp-2, 10px) }
+.skill-row{ display:flex; align-items:baseline; gap:var(--sp-3, 14px); flex-wrap:wrap }
+.skill-label{
+  font-size:var(--fs-small, 14px); font-weight:var(--fw-bold, 700);
+  color:var(--c-ink-soft); min-width:9em
+}
+.skill-letters{
+  font-size:var(--fs-body, 18px); font-weight:var(--fw-bold, 700);
+  color:var(--c-primary); letter-spacing:.14em
+}

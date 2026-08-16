@@ -22,6 +22,11 @@ Screens.parents = function(){
     );
     body.appendChild(h("div", { class:"card" }, stats));
 
+    /* Какво се удава и какво не — с думи, не с проценти. Родителят иска
+       да знае с какво да помогне, не колко процента е детето му. */
+    body.appendChild(h("h2", { class:"section-head" }, t("skillsHead")));
+    body.appendChild(h("div", { class:"card skills-card" }, skillSummary()));
+
     /* настройки */
     body.appendChild(h("h2", { class:"section-head" }, t("settingsHead")));
     const soundToggle = h("button", {
@@ -176,6 +181,36 @@ Screens.parents = function(){
 
     screen.appendChild(body);
     return screen;
+
+    /* Показваме само буквите: те са конкретни и родителят може да ги
+       упражни вкъщи. Числата остават скрити нарочно. */
+    function skillSummary(){
+      const lang = p.language;
+      const letters = (suffix) => Mastery.ranked("letter." + lang + ".")
+        .filter(x => x.id.slice(-suffix.length) === suffix && x.attempts >= 3);
+      const name = (rec) => rec.id.split(".")[2];   // "letter.bg.Ж.recognition" → "Ж"
+      const rows = [];
+
+      const rec = letters(".recognition");
+      const going = rec.filter(x => x.mastery >= 0.65).map(name);
+      const work  = rec.filter(x => x.mastery < 0.35).map(name);
+      const first = letters(".first").filter(x => x.mastery < 0.35).map(name);
+      const write = letters(".writing").filter(x => x.mastery < 0.35).map(name);
+
+      const row = (label, list) => {
+        if(!list.length) return;
+        rows.push(h("div", { class:"skill-row" },
+          h("span", { class:"skill-label" }, label),
+          h("span", { class:"skill-letters" }, list.slice(0, 12).join(" "))));
+      };
+      row(t("skillsGoing"), going);
+      row(t("skillsPractising"), work);
+      row(t("skillsSounds"), first);
+      row(t("skillsWriting"), write);
+
+      if(!rows.length) return [h("p", { class:"prompt" }, t("skillsNone"))];
+      return rows;
+    }
 
     function stat(num, lbl){
       return h("div", { class:"stat" }, h("div", { class:"num" }, String(num)), h("div", { class:"lbl" }, lbl));

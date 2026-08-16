@@ -24,9 +24,13 @@ function setLanguage(code){
 }
 
 /** Централизиран запис на резултат от решена задача (дума или сметка). */
-function recordResult(item, mistakes, hintsUsed){
+function recordResult(item, mistakes, hintsUsed, modeId){
   const p = State.progress, lp = LP(), alphabet = L().alphabet;
   if(mistakes === 0 && hintsUsed === 0) lp.firstTryCorrect += 1;
+
+  // Един резултат на рунд: сгрешило ли е детето по пътя, или не.
+  // Подсказката не е грешка — тя е позволена и не се брои.
+  Mastery.recordMany(skillsForRound(item, modeId, p.language), mistakes === 0);
 
   if(item.word){                      // само пътят с думите пази думи и букви
     const rec = lp.words[item.word] || { solved:0, mistakes:0, firstTry:false };

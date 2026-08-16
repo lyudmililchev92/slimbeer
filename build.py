@@ -38,6 +38,7 @@ SOURCES = [
     "src/data/levels-reading.js",
     "src/core/storage.js",
     "src/core/state.js",
+    "src/core/mastery.js",
     "src/core/speech.js",
     "src/core/audio.js",
     "src/core/dom.js",

@@ -28,6 +28,8 @@ function defaultProgress(){
     speechSpeed: "normal",
     autoSpeak: false,   // да изговаря ли думата сама при нов рунд
     tutorialCompleted: false,
+    // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
+    mastery: {},
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -74,6 +76,15 @@ const Store = {
       if(flat) Object.assign(lang.words, src2);
       else TRACK_IDS.forEach(tr => { if(src2[tr]) Object.assign(lang[tr], src2[tr]); });
       out.byLang[code] = lang;
+    }
+    // v3 → v4: уменията са нови. Стар запис просто тръгва с празни —
+    // напредъкът по нива и думи не се пипа.
+    if(!out.mastery || typeof out.mastery !== "object") out.mastery = {};
+    for(const id in out.mastery){
+      const r = out.mastery[id];
+      if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){
+        delete out.mastery[id];        // счупен запис се изхвърля, не чупи играта
+      }
     }
     if(!LANGS[out.language]) out.language = DEFAULT_LANG;
     if(!SPEECH_SPEEDS[out.speechSpeed]) out.speechSpeed = "normal";

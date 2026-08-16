@@ -60,4 +60,6 @@ function hasPicture(w){
   return !!w && !w.audioOnly && !!(w.emoji || (w.art && ART[w.art]));
 }
 function pictureWords(){ return WORDS.filter(hasPicture); }
+/* Пълни речника. Вика се от init() и от тестовете. */
+function setWords(list){ WORDS = list; }
 

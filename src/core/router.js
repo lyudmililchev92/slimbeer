@@ -11,7 +11,18 @@ const Router = {
     app.innerHTML = "";
     State.ui.screen = name;
     State.ui.params = params || null;
-    const screen = Screens[name] ? Screens[name](params || {}) : Screens.home();
+    // Ако екран гръмне, детето не бива да остане пред празнота. Връщаме го
+    // вкъщи и оставяме следата в конзолата за разработка.
+    let screen;
+    try{
+      screen = Screens[name] ? Screens[name](params || {}) : Screens.home();
+    }catch(err){
+      console.error("Екранът «" + name + "» не се отвори:", err);
+      State.ui.screen = "home";
+      State.ui.params = null;
+      try{ screen = Screens.home(); }
+      catch(e2){ console.error("И началният екран гръмна:", e2); return; }
+    }
     this.current = screen;
     app.appendChild(screen);
     // Чак сега елементите имат размер. Екрани с платно се нуждаят от това —
