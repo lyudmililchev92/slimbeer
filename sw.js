@@ -18,7 +18,11 @@ const SHELL = ["./", "./index.html", "./styles.css", "./app.js"];
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE)
-      .then((c) => c.addAll(SHELL))
+      /* cache:"reload" заобикаля HTTP кеша на браузъра. Без него новият
+         worker прилежно записваше СТАРИТЕ файлове: GitHub Pages ги дава с
+         max-age=600 и браузърът ги връщаше от паметта си, без да пита
+         сървъра. Кешът се сменяше, съдържанието — не. */
+      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" }))))
       .catch(() => {})          // липсващ файл не бива да чупи инсталацията
       .then(() => self.skipWaiting())
   );
@@ -41,7 +45,8 @@ self.addEventListener("fetch", (e) => {
 
   e.respondWith(
     caches.match(e.request).then((hit) => {
-      const fresh = fetch(e.request).then((res) => {
+      // и при обновяването питаме сървъра, вместо да вярваме на HTTP кеша
+      const fresh = fetch(new Request(e.request, { cache: "no-cache" })).then((res) => {
         if(res && res.status === 200){
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
