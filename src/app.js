@@ -6,6 +6,7 @@ let canShowImage = () => true;
 function rebuildWords(){
   WORDS = buildWords(State.progress.language, w => w.art ? !!ART[w.art] : canShowImage(w.emoji));
   if(DEBUG) console.log("[" + State.progress.language + "] думи:", WORDS.length);
+  buildPhonicsIndex(State.progress.language);
 }
 
 /* Иконата за началния екран на телефона се рисува в момента и се закача

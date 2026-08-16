@@ -70,7 +70,9 @@ function loadContext(files){
     "Mastery", "computeMastery", "skillsForRound", "writingSkill", "weightedPick", "wordWeight",
     "Store", "State", "defaultProgress", "CONFIG", "LANGS",
     "buildWords", "WORD_SOURCE", "MATH_LEVELS", "pickMathItem", "mathAnswer", "numberOptions",
-    "pickWord", "wordPool", "LEVELS", "setWords"
+    "pickWord", "wordPool", "LEVELS", "setWords",
+    "PHONICS", "phonicsPack", "firstSound", "lastSound", "soundSay",
+    "buildPhonicsIndex", "pickPhonicsItem", "phonicsCue"
   ].join(", ") + " };", ctx, { filename: "buki-bundle" });
   return ctx.__api;
 }
@@ -90,7 +92,10 @@ const CORE = [
   "src/core/dom.js",
   "src/games/math/generators.js",
   "__mode-stubs__",
-  "src/games/reading/reading.js"
+  "src/games/reading/reading.js",
+  "src/games/phonics/phonics.js",
+  "src/data/phonics-bg.js",
+  "src/data/phonics-nl.js"
 ];
 
 const api = loadContext(CORE);
@@ -189,6 +194,9 @@ group("Умения — имена");
      s({ word: "КОТЕ" }, "build", "bg").indexOf("reading.bg.length.4") >= 0);
   ok("срички", s({ word: "КОТЕ" }, "syllables", "bg")[0] === "reading.bg.syllables");
   ok("смятане", s({ kind: "add", max: 10 }, null, "bg")[0] === "math.add.10");
+  const ph = s({ kind: "phonics", mode: "first", sound: "К", options: [] }, null, "bg");
+  ok("звук — не се брои за сметка", ph.indexOf("sound.bg.К") >= 0, ph.join(" "));
+  ok("звук — записва се и видът упражнение", ph.indexOf("phonics.bg.first") >= 0, ph.join(" "));
   ok("писане", api.writingSkill("Ж", "bg") === "letter.bg.Ж.writing");
   ok("без дума няма умения", s(null, "build", "bg").length === 0);
   ok("повтарящи се букви не се броят двойно",
@@ -318,6 +326,90 @@ group("Умения — адаптивността наистина ли раб�
     for(let j = i + 1; j < Math.min(seq.length, i + api.CONFIG.recentMemory + 1); j++)
       if(seq[i] === seq[j]) tooSoon++;
   ok("нито една дума не се повтаря в рамките на паметта", tooSoon === 0, String(tooSoon));
+})();
+
+/* ==================================================================== */
+group("Звукове — правилата на езика");
+
+(function(){
+  api.State.progress = api.defaultProgress();
+
+  api.State.progress.language = "bg";
+  ok("бг: първият звук е първата буква", api.firstSound("КОТЕ", "bg") === "К");
+  ok("бг: последният звук е последната буква", api.lastSound("КОТЕ", "bg") === "Е");
+
+  api.State.progress.language = "nl";
+  ok("нл: sch е един звук", api.firstSound("SCHAAP", "nl") === "SCH", api.firstSound("SCHAAP", "nl"));
+  ok("нл: oe е един звук", api.firstSound("OER", "nl") === "OE", api.firstSound("OER", "nl"));
+  ok("нл: ij е един звук", api.firstSound("IJS", "nl") === "IJ", api.firstSound("IJS", "nl"));
+  ok("нл: единична буква си остава единична", api.firstSound("MAAN", "nl") === "M");
+  ok("нл: ng накрая е един звук", api.lastSound("RING", "nl") === "NG", api.lastSound("RING", "nl"));
+  ok("нл: къса дума не се реже погрешно", api.lastSound("EE", "nl") === "E", api.lastSound("EE", "nl"));
+  ok("звукът се изговаря фонетично, не като име на буква",
+     api.soundSay("M", "nl") === "mmm", api.soundSay("M", "nl"));
+})();
+
+/* ==================================================================== */
+group("Звукове — задачите");
+
+(function(){
+  const problems = [];
+  let made = 0;
+  const byMode = {};
+
+  for(const lang of ["bg", "nl"]){
+    api.State.progress = api.defaultProgress();
+    api.State.progress.language = lang;
+    api.setWords(api.buildWords(lang, () => true));
+    api.buildPhonicsIndex(lang);
+    const levels = api.phonicsPack(lang).levels;
+
+    for(const lvl of levels){
+      let nulls = 0;
+      for(let i = 0; i < 300; i++){
+        const it = api.pickPhonicsItem(lvl);
+        if(!it){ nulls++; continue; }
+        made++;
+        byMode[it.mode] = (byMode[it.mode] || 0) + 1;
+        if(lvl.modes.indexOf(it.mode) < 0) problems.push(lang + "/" + lvl.id + ": непоискан вид " + it.mode);
+        if(!it.target || !it.target.word) problems.push(lang + "/" + lvl.id + ": няма целева дума");
+        if(!it.options || it.options.length < 3) problems.push(lang + "/" + lvl.id + ": под три възможности");
+        const ids = it.options.map(o => o.word);
+        if(new Set(ids).size !== ids.length) problems.push(lang + "/" + lvl.id + ": повтарящa се възможност");
+        if(ids.indexOf(it.target.word) < 0) problems.push(lang + "/" + lvl.id + ": верният отговор липсва");
+        if(it.options.some(o => !o.emoji && !o.art)) problems.push(lang + "/" + lvl.id + ": възможност без картинка");
+        if(it.target.word.length > (lvl.maxLen || 99)) problems.push(lang + "/" + lvl.id + ": дума над позволената дължина");
+        // подсказката трябва да е нещо изговоримо
+        const cue = api.phonicsCue(it);
+        if(!cue || !String(cue).trim()) problems.push(lang + "/" + lvl.id + ": празна подсказка");
+        // при "коя не е на място" верният отговор е различната дума
+        if(it.mode === "odd"){
+          const same = it.options.filter(o => api.firstSound(o, lang) === it.sound).length;
+          if(same !== 3) problems.push(lang + "/" + lvl.id + ": «не е на място» няма точно три еднакви");
+        }
+        if(it.mode === "first"){
+          const ok2 = api.firstSound(it.target, lang) === it.sound;
+          const others = it.options.filter(o => o.word !== it.target.word)
+            .every(o => api.firstSound(o, lang) !== it.sound);
+          if(!ok2 || !others) problems.push(lang + "/" + lvl.id + ": началният звук не е еднозначен");
+        }
+        if(it.mode === "last"){
+          const others = it.options.filter(o => o.word !== it.target.word)
+            .every(o => api.lastSound(o, lang) !== it.sound);
+          if(!others) problems.push(lang + "/" + lvl.id + ": крайният звук не е еднозначен");
+        }
+        if(it.mode === "blend" && it.parts.join("") !== it.target.word)
+          problems.push(lang + "/" + lvl.id + ": звуковете не дават думата");
+        if(it.mode === "syllable" && it.parts.join("") !== it.target.word)
+          problems.push(lang + "/" + lvl.id + ": сричките не дават думата");
+      }
+      if(nulls > 150) problems.push(lang + "/" + lvl.id + ": ниво без достатъчно задачи (" + nulls + "/300 празни)");
+    }
+  }
+  ok(made + " задачи по звукове без нито един проблем", problems.length === 0,
+     [...new Set(problems)].slice(0, 4).join(" | "));
+  ok("всичките шест вида упражнения се появяват", Object.keys(byMode).length === 6,
+     Object.keys(byMode).join(" "));
 })();
 
 /* ==================================================================== */

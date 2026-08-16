@@ -125,7 +125,7 @@ const Play = {
     els.screen.classList.toggle("stage-full", !!mode.fullArea);
     if(mode.showsPicture) els.picHolder.appendChild(this.buildPicture(item));
 
-    if(item.word){                // размер на плочките спрямо дължината на думата
+    if(typeof item.word === "string"){   // размер на плочките спрямо дължината
       const count = mode.id === "syllables" ? item.syllables.length : item.word.length;
       els.playArea.style.setProperty("--tile", tileSizeFor(count, mode.id === "syllables"));
     }
@@ -306,7 +306,7 @@ const Play = {
     Sfx.success();
 
     els.okPraise.textContent = isTutorial ? t("greatJob") : rand(L().praise);
-    els.okWord.textContent = word.word ? word.word : String(mathAnswer(word));
+    els.okWord.textContent = currentTrack().label(word);
     els.okStars.innerHTML = "";
     for(let i = 0; i < 3; i++){
       els.okStars.appendChild(h("span", { class: i < stars ? "" : "dim" }, "⭐"));
@@ -314,7 +314,7 @@ const Play = {
     els.okNext.innerHTML = "";
     els.overlay.hidden = false;
     runConfetti(els.confetti);
-    setTimeout(() => Speech.speak(word.display || numberWord(mathAnswer(word))), 500);
+    setTimeout(() => Speech.speak(currentTrack().speak(word)), 500);
 
     setTimeout(() => {
       const label = isTutorial ? t("letsPlay") : t("next");

@@ -37,6 +37,9 @@ const MASTERY_BANDS = [
   { upto: 1.01, id: "mastered" }    // усвоено
 ];
 
+/* Видовете сметки. Изброени са, защото и звуковите задачи имат kind. */
+const MATH_KINDS = ["count", "add", "sub", "sequence", "compare"];
+
 function emptySkill(){
   return { attempts: 0, correct: 0, recent: [], mastery: 0, lastSeen: 0 };
 }
@@ -124,7 +127,13 @@ function skillsForRound(item, modeId, lang){
   const ids = [];
   if(!item) return ids;
 
-  if(item.kind){                                  // задача по смятане
+  if(item.kind === "phonics"){                    // задача по звукове
+    if(item.sound) ids.push("sound." + lang + "." + item.sound);
+    ids.push("phonics." + lang + "." + item.mode);
+    return ids;
+  }
+
+  if(MATH_KINDS.indexOf(item.kind) >= 0){         // задача по смятане
     const cap = item.max || 10;
     ids.push("math." + item.kind + "." + cap);
     return ids;

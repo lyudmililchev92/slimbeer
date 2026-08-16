@@ -32,7 +32,7 @@ function recordResult(item, mistakes, hintsUsed, modeId){
   // Подсказката не е грешка — тя е позволена и не се брои.
   Mastery.recordMany(skillsForRound(item, modeId, p.language), mistakes === 0);
 
-  if(item.word){                      // само пътят с думите пази думи и букви
+  if(typeof item.word === "string"){  // само пътят с думите пази думи и букви
     const rec = lp.words[item.word] || { solved:0, mistakes:0, firstTry:false };
     rec.solved += 1;
     rec.mistakes += mistakes;

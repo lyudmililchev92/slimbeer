@@ -45,6 +45,9 @@ SOURCES = [
     "src/ui/animations.js",
 
     # игри
+    "src/games/phonics/phonics.js",
+    "src/data/phonics-bg.js",
+    "src/data/phonics-nl.js",
     "src/games/reading/arrange.js",
     "src/games/reading/choose.js",
     "src/games/reading/reading.js",
