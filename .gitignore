@@ -1,3 +1,6 @@
 # Копие за публикуване като Claude Artifact — не е част от играта
-letterbeer-artifact.html
+dist/buki-artifact.html
 .DS_Store
+
+# Вътрешни работни документи — не влизат в публичното репо
+docs/

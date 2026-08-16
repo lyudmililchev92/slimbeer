@@ -1,0 +1,80 @@
+   Карти / решетки (букви, звезди, родители)
+   ========================================================================= */
+.page-title{display:flex;align-items:center;gap:var(--s-3);padding:2px 2px var(--s-4);flex:0 0 auto}
+.page-title h1{font-size:clamp(20px,3vmin,28px)}
+.card{background:var(--c-surface);border-radius:var(--r-lg);box-shadow:var(--sh-2);padding:var(--s-5)}
+
+.letter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:clamp(8px,1.6vmin,14px)}
+.letter-cell{
+  aspect-ratio:1;border-radius:var(--r-md);
+  background:var(--c-surface);box-shadow:var(--sh-1);
+  font-size:clamp(28px,5vmin,40px);font-weight:var(--fw-bold);color:var(--c-primary-dark);
+  display:flex;align-items:center;justify-content:center;position:relative;
+  transition:transform var(--t-fast) var(--ease);
+}
+.letter-cell:active{transform:scale(.94)}
+.letter-cell.known::after{content:"⭐";position:absolute;right:5px;top:4px;font-size:13px}
+
+.word-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:var(--s-3)}
+.word-card{
+  background:var(--c-surface);border-radius:var(--r-md);box-shadow:var(--sh-1);
+  padding:var(--s-3);display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:transform var(--t-fast) var(--ease);
+}
+.word-card:active{transform:scale(.96)}
+.word-card .art{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.word-card .art svg{width:100%;height:100%}
+.word-card .art .emoji{font-size:clamp(34px,7vmin,52px);line-height:1}
+.word-card .label{font-size:14px;font-weight:var(--fw-bold);letter-spacing:1px;color:var(--c-ink-soft)}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--s-3)}
+.stat{background:var(--c-surface-2);border-radius:var(--r-md);padding:var(--s-4);text-align:center}
+.stat .num{font-size:clamp(24px,4vmin,34px);font-weight:var(--fw-bold);color:var(--c-primary-dark)}
+.stat .lbl{font-size:13px;font-weight:700;color:var(--c-ink-soft);margin-top:2px}
+
+.setting-row{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);
+  padding:var(--s-3) 0;border-bottom:2px solid var(--c-line);
+}
+.setting-row:last-child{border-bottom:0}
+.setting-row .lbl{font-weight:var(--fw-bold);font-size:17px}
+.toggle{
+  width:76px;height:44px;border-radius:var(--r-full);background:#D8DBEC;position:relative;
+  transition:background var(--t-med) var(--ease);flex:0 0 auto;
+}
+.toggle::after{
+  content:"";position:absolute;top:5px;left:5px;width:34px;height:34px;border-radius:50%;
+  background:#fff;box-shadow:var(--sh-1);transition:transform var(--t-med) var(--ease-back);
+}
+.toggle[aria-checked="true"]{background:var(--c-success)}
+.toggle[aria-checked="true"]::after{transform:translateX(32px)}
+
+.section-head{font-size:15px;font-weight:var(--fw-bold);color:var(--c-ink-soft);letter-spacing:.6px;text-transform:uppercase;margin:var(--s-5) 0 var(--s-3)}
+
+/* =========================================================================
+   Научи буквата / Напиши буквата
+   ========================================================================= */
+.letter-hero{
+  font-size:clamp(110px,26vmin,220px);font-weight:var(--fw-bold);line-height:1;
+  color:var(--c-primary);text-shadow:0 12px 22px rgba(108,92,231,.22);
+}
+.letter-pair{display:flex;gap:var(--s-4);align-items:baseline;justify-content:center}
+.letter-pair .small{font-size:clamp(56px,13vmin,110px);color:var(--c-pink);font-weight:var(--fw-bold)}
+
+.write-wrap{
+  position:relative;width:min(100%,560px,56vh);aspect-ratio:1;margin:0 auto;
+  background:var(--c-surface);border-radius:var(--r-lg);box-shadow:var(--sh-2);overflow:hidden;
+  touch-action:none;
+}
+.write-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.prompt.try-again{color:#C0392B}
+.write-actions{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center;margin-top:var(--s-4)}
+
+/* debug */
+.debug-panel{
+  position:fixed;left:8px;bottom:8px;z-index:90;background:rgba(20,20,35,.9);color:#9CFFB2;
+  font:12px/1.5 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:12px;max-width:280px;
+}
+.debug-panel button{background:#2E2E4C;color:#fff;border-radius:8px;padding:4px 9px;margin:2px;font-size:12px}
+
+/* =========================================================================

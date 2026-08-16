@@ -1,0 +1,61 @@
+/* =========================================================================
+   Reset / база
+   ========================================================================= */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}          /* важно: елементите с display:flex иначе игнорират hidden */
+html,body{height:100%;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font);
+  color:var(--c-ink);
+  background:
+    radial-gradient(1100px 700px at 12% -12%, #FFFFFF 0%, rgba(255,255,255,0) 60%),
+    radial-gradient(900px 700px at 110% 8%, var(--c-bg-2) 0%, rgba(253,242,236,0) 62%),
+    var(--c-bg-1);
+  overflow:hidden;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;font-weight:var(--fw-bold)}
+h1,h2,h3,p{margin:0}
+:focus{outline:none}
+:focus-visible{outline:4px solid var(--c-primary);outline-offset:3px;border-radius:8px}
+
+#app{
+  position:relative;
+  height:100vh;
+  height:100dvh;
+  width:100%;
+  overflow:hidden;
+}
+
+/* декоративни балончета на фона */
+.bg-deco{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-deco i{
+  position:absolute;border-radius:50%;display:block;
+  animation:floaty 9s var(--ease) infinite alternate;
+}
+.bg-deco i:nth-child(1){width:220px;height:220px;left:-70px;top:8%;background:rgba(108,92,231,.07)}
+.bg-deco i:nth-child(2){width:150px;height:150px;right:-40px;top:26%;background:rgba(255,180,67,.10);animation-delay:-3s}
+.bg-deco i:nth-child(3){width:280px;height:280px;right:8%;bottom:-120px;background:rgba(72,183,240,.07);animation-delay:-5s}
+.bg-deco i:nth-child(4){width:120px;height:120px;left:16%;bottom:6%;background:rgba(255,123,169,.09);animation-delay:-1.5s}
+@keyframes floaty{from{transform:translateY(0)}to{transform:translateY(-26px)}}
+
+/* =========================================================================
+   Екрани / рутер
+   ========================================================================= */
+.screen{
+  position:absolute;inset:0;z-index:1;
+  display:flex;flex-direction:column;
+  padding:max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  animation:screen-in var(--t-med) var(--ease);
+}
+@keyframes screen-in{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
+.scroll-area{
+  flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:2px 4px var(--s-6);width:100%;max-width:980px;margin:0 auto;
+}
+.page-title{max-width:980px;width:100%;margin:0 auto}

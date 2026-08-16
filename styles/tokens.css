@@ -1,0 +1,60 @@
+/* =========================================================================
+   БУКВИК — design tokens
+   ========================================================================= */
+:root{
+  /* цветове */
+  --c-bg-1:#F4F6FD;
+  --c-bg-2:#FDF2EC;
+  --c-surface:#FFFFFF;
+  --c-surface-2:#F6F7FC;
+  --c-ink:#2A2A45;
+  --c-ink-soft:#6C6C8C;
+  --c-line:#E7E9F5;
+
+  --c-primary:#6C5CE7;
+  --c-primary-dark:#5548C8;
+  --c-primary-soft:#EDEAFF;
+
+  --c-success:#2FBF71;
+  --c-success-soft:#E2F7EC;
+  --c-warm:#FFB443;
+  --c-warm-soft:#FFF2DC;
+  --c-pink:#FF7BA9;
+  --c-sky:#48B7F0;
+
+  /* акценти по категория */
+  --acc-animals:#59C1A6;
+  --acc-food:#FF9F68;
+  --acc-home:#7C9CF5;
+  --acc-nature:#57C07A;
+  --acc-vehicles:#5EB7E8;
+  --acc-objects:#B58BEF;
+  --acc-family:#FF8FB1;
+
+  /* радиуси */
+  --r-xs:10px; --r-sm:14px; --r-md:22px; --r-lg:30px; --r-xl:40px; --r-full:999px;
+
+  /* отстояния */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px;
+
+  /* сенки */
+  --sh-1:0 2px 6px rgba(42,42,69,.06);
+  --sh-2:0 8px 20px rgba(42,42,69,.10);
+  --sh-3:0 18px 44px rgba(42,42,69,.16);
+  --sh-inset:inset 0 -4px 0 rgba(42,42,69,.08);
+
+  /* типография */
+  --font:"Nunito", ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fw-bold:800;
+
+  /* размери за докосване */
+  --tap:56px;
+  --tile:clamp(52px, 13vmin, 84px);
+
+  /* анимации */
+  --t-fast:140ms;
+  --t-med:260ms;
+  --t-slow:460ms;
+  --ease:cubic-bezier(.22,.9,.35,1);
+  --ease-back:cubic-bezier(.34,1.56,.64,1);
+}

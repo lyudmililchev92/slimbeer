@@ -1,0 +1,52 @@
+   Адаптивност
+   ========================================================================= */
+/* таблет/десктоп landscape → картинка вляво, игра вдясно */
+@media (min-width:820px) and (min-aspect-ratio:1/1){
+  .stage{flex-direction:row;gap:clamp(24px,5vw,72px);align-items:center;justify-content:center}
+  .stage-visual{flex:0 1 auto;width:auto}
+  .stage-play{flex:0 1 auto;width:auto;min-width:0;max-width:min(52vw,660px)}
+  .pic-card{width:min(38vw,380px);height:min(38vw,380px)}
+  :root{--tile:clamp(58px,9vmin,92px)}
+}
+@media (max-height:560px) and (orientation:landscape){
+  :root{--tile:clamp(42px,10.5vmin,62px)}
+  .pic-card{width:clamp(120px,30vmin,190px);height:clamp(120px,30vmin,190px)}
+}
+@media (max-width:380px){
+  :root{--tap:52px;--tile:clamp(44px,15vmin,60px)}
+}
+/* нисък екран (телефон landscape, малък таблет) — компактен начален екран */
+@media (max-height:520px){
+  .home .tagline{display:none}
+  .home-row .btn{min-height:64px;font-size:13px}
+  .home-row .btn .em{font-size:22px}
+}
+
+/* по-малко движение */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important;
+  }
+}
+
+/* Въпрос, който се чува. Малкият високоговорител казва на детето,
+   че може да го докосне и да го чуе пак. */
+.prompt.say{
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: opacity .15s ease;
+}
+.prompt.say::after{
+  content: "🔊";
+  margin-left: .45em;
+  font-size: .85em;
+  opacity: .55;
+}
+.prompt.say:hover,
+.prompt.say:active{ opacity: .75; }
+.prompt.say:focus-visible{ border-radius: 12px; }
+@media (prefers-reduced-motion: reduce){
+  .prompt.say{ transition: none; }
+}
