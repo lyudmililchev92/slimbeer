@@ -76,9 +76,9 @@ from level rules, so they never repeat.
 inside the letter and pink outside, so the child sees immediately when the
 stroke leaves the shape. Both alphabets — 26 Latin letters and 30 Cyrillic.
 
-**758 words** across 23 categories. 593 have a picture; 165 more have no
-picture and are heard instead, which is what makes verbs and adjectives
-possible at all.
+**755 words in Dutch and 766 in Bulgarian**, across 24 categories. 590 of the
+Dutch ones have a picture; 165 more have no picture and are heard instead,
+which is what makes verbs and adjectives possible at all.
 
 Progress is kept separately per language and per subject. Stars are shared.
 
@@ -214,8 +214,9 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 **Писане** — детето проследява буквата с пръст. Мастилото е лилаво в буквата и
 розово извън нея, така че веднага вижда, когато излезе. И двете азбуки.
 
-**758 думи** в 23 категории. 593 са с картинка, а още 165 се чуват вместо да
-се виждат — това позволява глаголи и прилагателни, за които картинка няма.
+**766 думи на български и 755 на нидерландски**, в 24 категории. 601 от
+българските са с картинка, а още 165 се чуват вместо да се виждат — това
+позволява глаголи и прилагателни, за които картинка няма.
 
 Прогресът е отделен за всеки език и за всеки предмет. Звездите са общи.
 

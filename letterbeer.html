@@ -1021,7 +1021,7 @@ const WORD_SOURCE = {
     МАЙ-МУ-НА/AAP 🐒 | ЗЕБ-РА/ZE-BRA 🦓 | КРА-ВА/KOE 🐄 | ПРА-СЕ/VAR-KEN 🐷
     ПЕ-ТЕЛ/HAAN 🐓 | ПУ-ЯК/KAL-KOEN 🦃 | ПА-УН/PAUW 🦚 | ПА-ПА-ГАЛ/PA-PE-GAAI 🦜
     О-РЕЛ/A-REND 🦅 | СО-ВА/UIL 🦉 | ГЪ-ЛЪБ/DUIF 🕊️ | ЛЕ-БЕД/ZWAAN 🦢
-    ФЛА-МИН-ГО/FLA-MIN-GO 🦩 | ПИН-ГВИН/PIN-GU-ÏN 🐧 | ТЮ-ЛЕН/ZEE-HOND 🦭 | КИТ/WAL-VIS 🐳
+    ФЛА-МИН-ГО/FLA-MIN-GO 🦩 | ПИН-ГВИН/- 🐧 | ТЮ-ЛЕН/ZEE-HOND 🦭 | КИТ/WAL-VIS 🐳
     А-КУ-ЛА/HAAI 🦈 | ОК-ТО-ПОД/OC-TO-PUS 🐙 | ОХ-ЛЮВ/SLAK 🐌 | МРАВ-КА/MIER 🐜
     ПЧЕ-ЛА/BIJ 🐝 | БУ-БО-ЛЕЧ-КА/- 🐞 | МУ-ХА/VLIEG 🪰 | КО-МАР/MUG 🦟
     СКОР-ПИ-ОН/SCHOR-PI-OEN 🦂 | ЗМИ-Я/SLANG 🐍 | ГУ-ЩЕР/HA-GE-DIS 🦎 | КРО-КО-ДИЛ/KRO-KO-DIL 🐊
@@ -1046,7 +1046,7 @@ const WORD_SOURCE = {
     ЧЕ-РЕ-ША/KERS 🍒 | ЛИ-МОН/CI-TROEN 🍋 | ПОР-ТО-КАЛ/SI-NAAS-AP-PEL 🍊 | ДИ-НЯ/WA-TER-ME-LOEN 🍉
     ПЪ-ПЕШ/ME-LOEN 🍈 | ПРАС-КО-ВА/PER-ZIK 🍑 | МАН-ГО/MAN-GO 🥭 | КО-КОС/KO-KOS 🥥
     КИ-ВИ/KI-WI 🥝 | БО-РО-ВИН-КА/BOS-BES 🫐 | МАС-ЛИ-НА/O-LIJF 🫒 | А-ВО-КА-ДО/A-VO-CA-DO 🥑
-    КРАС-ТА-ВИ-ЦА/KOM-KOM-MER 🥒 | ЧУШ-КА/PA-PRI-KA 🫑 | ЦА-РЕ-ВИ-ЦА/MAÏS 🌽 | КАР-ТОФ/AARD-AP-PEL 🥔
+    КРАС-ТА-ВИ-ЦА/KOM-KOM-MER 🥒 | ЧУШ-КА/PA-PRI-KA 🫑 | ЦА-РЕ-ВИ-ЦА/- 🌽 | КАР-ТОФ/AARD-AP-PEL 🥔
     БА-ТАТ/- 🍠 | ГРАХ/ERWT 🫛 | БРО-КО-ЛИ/BROC-CO-LI 🥦 | МА-РУ-ЛЯ/SLA 🥬
     ЧЕ-СЪН/KNOF-LOOK 🧄 | ДЖИН-ДЖИ-ФИЛ/GEM-BER 🫚 | ПИ-ПЕР/PE-PER 🌶️ | ФЪС-ТЪК/PIN-DA 🥜
     КЕС-ТЕН/KAS-TAN-JE 🌰 | БОБ/BOON 🫘 | КРО-А-САН/CROIS-SANT 🥐 | ФРАН-ЗЕ-ЛА/STOK-BROOD 🥖
@@ -2579,10 +2579,6 @@ const MODE_CATCH = {
         ctx.fillText(d.ch, 0, size * 0.03);
         ctx.restore();
       });
-
-      ctx.font = Math.round(H*0.055) + "px serif";
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      air.forEach(a => ctx.fillText(TH.air, a.x, a.y));
 
       sparks.forEach(s => {
         ctx.globalAlpha = Math.max(0, s.life);
