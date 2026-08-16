@@ -137,7 +137,7 @@
 .lang-row{display:flex;gap:var(--s-2);justify-content:center;flex-wrap:wrap;margin-top:var(--s-2)}
 .lang-btn{
   display:inline-flex;align-items:center;gap:8px;
-  min-height:44px;padding:0 16px;border-radius:var(--r-full);
+  min-height:var(--tap);padding:0 18px;border-radius:var(--r-full);
   background:rgba(255,255,255,.75);box-shadow:var(--sh-1);
   font-size:14px;font-weight:var(--fw-bold);color:var(--c-ink-soft);
   transition:transform var(--t-fast) var(--ease), background var(--t-fast), color var(--t-fast);
@@ -146,7 +146,8 @@
 .lang-btn.active{background:var(--c-primary);color:#fff;box-shadow:0 6px 16px rgba(108,92,231,.34)}
 .lang-btn:active{transform:scale(.95)}
 .lang-row.compact{margin-top:0;justify-content:flex-end}
-.lang-row.compact .lang-btn{min-height:40px;padding:0 12px;font-size:13px}
+/* Компактният ред е в екрана за родители — там пръстът е голям. */
+.lang-row.compact .lang-btn{min-height:44px;padding:0 14px;font-size:13px}
 
 .level-chip{
   display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:var(--r-full);

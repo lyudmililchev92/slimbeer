@@ -233,7 +233,7 @@
 }
 .story-line.speaking{ background:#F2EFFF }
 .line-listen{
-  flex:0 0 auto; min-width:var(--touch,48px); min-height:var(--touch,48px);
+  flex:0 0 auto; min-width:var(--tap); min-height:var(--tap);
   border:none; border-radius:50%; background:#F3F1FF; cursor:pointer;
   font-size:clamp(17px,3vmin,24px)
 }
@@ -255,7 +255,7 @@
   letter-spacing:.1em
 }
 .opt-word{
-  min-height:var(--touch,56px); padding:.55em 1.1em; border:none; cursor:pointer;
+  min-height:var(--tap); padding:.55em 1.1em; border:none; cursor:pointer;
   border-radius:var(--r-md,18px); background:#FFF; color:var(--c-primary);
   font-size:clamp(17px,3vmin,26px); font-weight:800;
   box-shadow:0 3px 12px rgba(42,42,69,.10)
@@ -267,7 +267,7 @@
 .shape-target svg{ width:clamp(88px,18vmin,150px); height:auto }
 .opt-shape{
   display:flex; align-items:center; justify-content:center; cursor:pointer;
-  min-width:var(--touch,64px); min-height:var(--touch,64px);
+  min-width:var(--tap); min-height:var(--tap);
   padding:clamp(8px,1.6vmin,14px); border:none;
   border-radius:var(--r-md,18px); background:#FFF;
   box-shadow:0 3px 12px rgba(42,42,69,.10)
@@ -284,7 +284,7 @@
 }
 .pattern-cell.q{ color:var(--c-primary); font-weight:800; border:3px dashed #C9C1FF; background:transparent }
 .opt-icon{
-  cursor:pointer; min-width:var(--touch,64px); min-height:var(--touch,64px);
+  cursor:pointer; min-width:var(--tap); min-height:var(--tap);
   border:none; border-radius:var(--r-md,18px); background:#FFF;
   font-size:clamp(26px,5.5vmin,44px); box-shadow:0 3px 12px rgba(42,42,69,.10)
 }
@@ -295,7 +295,7 @@
   line-height:1
 }
 .opt-group{
-  cursor:pointer; min-height:var(--touch,64px); padding:clamp(8px,1.6vmin,14px);
+  cursor:pointer; min-height:var(--tap); padding:clamp(8px,1.6vmin,14px);
   border:none; border-radius:var(--r-md,18px); background:#FFF;
   box-shadow:0 3px 12px rgba(42,42,69,.10)
 }
@@ -304,7 +304,7 @@
 
 /* --- лов: горната лента според вида задача -------------------------- */
 .catch-listen{
-  min-width:var(--touch,56px); min-height:var(--touch,56px); border:none; cursor:pointer;
+  min-width:var(--tap); min-height:var(--tap); border:none; cursor:pointer;
   border-radius:50%; background:#FFF3D9; font-size:clamp(20px,4vmin,32px);
   box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
@@ -326,7 +326,7 @@
 .memory-card{
   position:relative; aspect-ratio:1; cursor:pointer; border:none; padding:0;
   border-radius:var(--r-md,16px); background:transparent;
-  min-height:var(--touch,56px)
+  min-height:var(--tap)
 }
 .memory-card .card-back,
 .memory-card .card-front{
@@ -359,7 +359,7 @@
 }
 .sort-item{
   cursor:pointer; border:3px solid transparent; padding:clamp(4px,1vmin,8px);
-  min-width:var(--touch,56px); min-height:var(--touch,56px);
+  min-width:var(--tap); min-height:var(--tap);
   border-radius:var(--r-md,16px); background:#FFF;
   box-shadow:0 3px 10px rgba(42,42,69,.10)
 }

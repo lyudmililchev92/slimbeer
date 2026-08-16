@@ -80,8 +80,8 @@
 
 
 /* Обобщение на уменията в екрана за родители. Букви, не числа. */
-.skills-card{ display:flex; flex-direction:column; gap:var(--sp-2, 10px) }
-.skill-row{ display:flex; align-items:baseline; gap:var(--sp-3, 14px); flex-wrap:wrap }
+.skills-card{ display:flex; flex-direction:column; gap:var(--s-2) }
+.skill-row{ display:flex; align-items:baseline; gap:var(--s-3); flex-wrap:wrap }
 .skill-label{
   font-size:var(--fs-small, 14px); font-weight:var(--fw-bold, 700);
   color:var(--c-ink-soft); min-width:9em
@@ -97,7 +97,7 @@
 }
 .write-tab{
   display:flex; align-items:center; gap:.45em; cursor:pointer;
-  min-height:var(--touch,48px); padding:.4em 1em; border:none;
+  min-height:var(--tap); padding:.4em 1em; border:none;
   border-radius:999px; background:#FFF; color:var(--c-ink-soft);
   font-size:var(--fs-small,15px); font-weight:800;
   box-shadow:0 2px 8px rgba(42,42,69,.08)
@@ -131,7 +131,7 @@
 }
 .friend-card{
   display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
-  min-height:var(--touch,64px); padding:clamp(8px,1.6vmin,14px) 4px; border:none;
+  min-height:var(--tap); padding:clamp(8px,1.6vmin,14px) 4px; border:none;
   border-radius:var(--r-md,18px); background:#FFF;
   box-shadow:0 3px 12px rgba(42,42,69,.08)
 }

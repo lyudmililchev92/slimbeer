@@ -308,6 +308,25 @@ def broken_css_comments():
     return bad
 
 
+def undefined_css_vars():
+    """var(--нещо) без дефиниция мълчи: браузърът взима резервната стойност
+    и всичко изглежда наред, докато токенът не се промени и не се промени
+    нищо. Точно така --touch се ползваше на пет места, без изобщо да
+    съществува — размерите бяха 48px вместо 56.
+
+    Двете изключения се задават от кода при рисуване, не в стиловете."""
+    ОТ_КОДА = {"--acc", "--cols"}
+    defined, used = set(), {}
+    for name in STYLES:
+        src = read(name)
+        for m in re.finditer(r"(--[\w-]+)\s*:", src):
+            defined.add(m.group(1))
+        for m in re.finditer(r"var\(\s*(--[\w-]+)", src):
+            used.setdefault(m.group(1), set()).add(name)
+    return [v + " (" + ", ".join(sorted(used[v])) + ")"
+            for v in sorted(used) if v not in defined and v not in ОТ_КОДА]
+
+
 def rules_lost(css):
     """Колко правила биха се изгубили: броим отварящите скоби извън
     коментари и низове. Не е пълен парсер, но хваща точно случая, който
@@ -346,6 +365,13 @@ def main():
         print("Счупен коментар в стиловете:\n")
         for c in css_bad:
             print("  ✗ " + c)
+        raise SystemExit(1)
+
+    missing_vars = undefined_css_vars()
+    if missing_vars:
+        print("Ползван, но недефиниран токен в стиловете:\n")
+        for v in missing_vars:
+            print("  ✗ " + v)
         raise SystemExit(1)
 
     dupes = duplicate_ui_keys()

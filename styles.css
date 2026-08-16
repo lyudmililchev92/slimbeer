@@ -47,9 +47,13 @@
   /* типография */
   --font:"Nunito", ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --fw-bold:800;
+  /* Размери на текста. Досега бяха разпръснати числа; сега са две стъпала,
+     които се ползват навсякъде, където няма нужда от собствен мащаб. */
+  --fs-small:clamp(13px, 2vmin, 16px);
+  --fs-body:clamp(16px, 2.6vmin, 20px);
 
   /* размери за докосване */
-  --tap:56px;
+  --tap:56px;            /* най-малката цел за детски пръст */
   --tile:clamp(52px, 13vmin, 84px);
 
   /* анимации */
@@ -301,7 +305,7 @@ h1,h2,h3,p{margin:0}
 .lang-row{display:flex;gap:var(--s-2);justify-content:center;flex-wrap:wrap;margin-top:var(--s-2)}
 .lang-btn{
   display:inline-flex;align-items:center;gap:8px;
-  min-height:44px;padding:0 16px;border-radius:var(--r-full);
+  min-height:var(--tap);padding:0 18px;border-radius:var(--r-full);
   background:rgba(255,255,255,.75);box-shadow:var(--sh-1);
   font-size:14px;font-weight:var(--fw-bold);color:var(--c-ink-soft);
   transition:transform var(--t-fast) var(--ease), background var(--t-fast), color var(--t-fast);
@@ -310,7 +314,8 @@ h1,h2,h3,p{margin:0}
 .lang-btn.active{background:var(--c-primary);color:#fff;box-shadow:0 6px 16px rgba(108,92,231,.34)}
 .lang-btn:active{transform:scale(.95)}
 .lang-row.compact{margin-top:0;justify-content:flex-end}
-.lang-row.compact .lang-btn{min-height:40px;padding:0 12px;font-size:13px}
+/* Компактният ред е в екрана за родители — там пръстът е голям. */
+.lang-row.compact .lang-btn{min-height:44px;padding:0 14px;font-size:13px}
 
 .level-chip{
   display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:var(--r-full);
@@ -626,7 +631,7 @@ h1,h2,h3,p{margin:0}
 }
 .story-line.speaking{ background:#F2EFFF }
 .line-listen{
-  flex:0 0 auto; min-width:var(--touch,48px); min-height:var(--touch,48px);
+  flex:0 0 auto; min-width:var(--tap); min-height:var(--tap);
   border:none; border-radius:50%; background:#F3F1FF; cursor:pointer;
   font-size:clamp(17px,3vmin,24px)
 }
@@ -648,7 +653,7 @@ h1,h2,h3,p{margin:0}
   letter-spacing:.1em
 }
 .opt-word{
-  min-height:var(--touch,56px); padding:.55em 1.1em; border:none; cursor:pointer;
+  min-height:var(--tap); padding:.55em 1.1em; border:none; cursor:pointer;
   border-radius:var(--r-md,18px); background:#FFF; color:var(--c-primary);
   font-size:clamp(17px,3vmin,26px); font-weight:800;
   box-shadow:0 3px 12px rgba(42,42,69,.10)
@@ -660,7 +665,7 @@ h1,h2,h3,p{margin:0}
 .shape-target svg{ width:clamp(88px,18vmin,150px); height:auto }
 .opt-shape{
   display:flex; align-items:center; justify-content:center; cursor:pointer;
-  min-width:var(--touch,64px); min-height:var(--touch,64px);
+  min-width:var(--tap); min-height:var(--tap);
   padding:clamp(8px,1.6vmin,14px); border:none;
   border-radius:var(--r-md,18px); background:#FFF;
   box-shadow:0 3px 12px rgba(42,42,69,.10)
@@ -677,7 +682,7 @@ h1,h2,h3,p{margin:0}
 }
 .pattern-cell.q{ color:var(--c-primary); font-weight:800; border:3px dashed #C9C1FF; background:transparent }
 .opt-icon{
-  cursor:pointer; min-width:var(--touch,64px); min-height:var(--touch,64px);
+  cursor:pointer; min-width:var(--tap); min-height:var(--tap);
   border:none; border-radius:var(--r-md,18px); background:#FFF;
   font-size:clamp(26px,5.5vmin,44px); box-shadow:0 3px 12px rgba(42,42,69,.10)
 }
@@ -688,7 +693,7 @@ h1,h2,h3,p{margin:0}
   line-height:1
 }
 .opt-group{
-  cursor:pointer; min-height:var(--touch,64px); padding:clamp(8px,1.6vmin,14px);
+  cursor:pointer; min-height:var(--tap); padding:clamp(8px,1.6vmin,14px);
   border:none; border-radius:var(--r-md,18px); background:#FFF;
   box-shadow:0 3px 12px rgba(42,42,69,.10)
 }
@@ -697,7 +702,7 @@ h1,h2,h3,p{margin:0}
 
 /* --- лов: горната лента според вида задача -------------------------- */
 .catch-listen{
-  min-width:var(--touch,56px); min-height:var(--touch,56px); border:none; cursor:pointer;
+  min-width:var(--tap); min-height:var(--tap); border:none; cursor:pointer;
   border-radius:50%; background:#FFF3D9; font-size:clamp(20px,4vmin,32px);
   box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
@@ -719,7 +724,7 @@ h1,h2,h3,p{margin:0}
 .memory-card{
   position:relative; aspect-ratio:1; cursor:pointer; border:none; padding:0;
   border-radius:var(--r-md,16px); background:transparent;
-  min-height:var(--touch,56px)
+  min-height:var(--tap)
 }
 .memory-card .card-back,
 .memory-card .card-front{
@@ -752,7 +757,7 @@ h1,h2,h3,p{margin:0}
 }
 .sort-item{
   cursor:pointer; border:3px solid transparent; padding:clamp(4px,1vmin,8px);
-  min-width:var(--touch,56px); min-height:var(--touch,56px);
+  min-width:var(--tap); min-height:var(--tap);
   border-radius:var(--r-md,16px); background:#FFF;
   box-shadow:0 3px 10px rgba(42,42,69,.10)
 }
@@ -869,8 +874,8 @@ h1,h2,h3,p{margin:0}
 
 
 /* Обобщение на уменията в екрана за родители. Букви, не числа. */
-.skills-card{ display:flex; flex-direction:column; gap:var(--sp-2, 10px) }
-.skill-row{ display:flex; align-items:baseline; gap:var(--sp-3, 14px); flex-wrap:wrap }
+.skills-card{ display:flex; flex-direction:column; gap:var(--s-2) }
+.skill-row{ display:flex; align-items:baseline; gap:var(--s-3); flex-wrap:wrap }
 .skill-label{
   font-size:var(--fs-small, 14px); font-weight:var(--fw-bold, 700);
   color:var(--c-ink-soft); min-width:9em
@@ -886,7 +891,7 @@ h1,h2,h3,p{margin:0}
 }
 .write-tab{
   display:flex; align-items:center; gap:.45em; cursor:pointer;
-  min-height:var(--touch,48px); padding:.4em 1em; border:none;
+  min-height:var(--tap); padding:.4em 1em; border:none;
   border-radius:999px; background:#FFF; color:var(--c-ink-soft);
   font-size:var(--fs-small,15px); font-weight:800;
   box-shadow:0 2px 8px rgba(42,42,69,.08)
@@ -920,7 +925,7 @@ h1,h2,h3,p{margin:0}
 }
 .friend-card{
   display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
-  min-height:var(--touch,64px); padding:clamp(8px,1.6vmin,14px) 4px; border:none;
+  min-height:var(--tap); padding:clamp(8px,1.6vmin,14px) 4px; border:none;
   border-radius:var(--r-md,18px); background:#FFF;
   box-shadow:0 3px 12px rgba(42,42,69,.08)
 }
