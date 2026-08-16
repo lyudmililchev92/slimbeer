@@ -127,6 +127,12 @@ function skillsForRound(item, modeId, lang){
   const ids = [];
   if(!item) return ids;
 
+  if(item.sentences){                             // разказче
+    ids.push("reading." + lang + ".comprehension");
+    ids.push("story." + lang + ".level." + item.level);
+    return ids;
+  }
+
   if(item.kind === "phonics"){                    // задача по звукове
     if(item.sound) ids.push("sound." + lang + "." + item.sound);
     ids.push("phonics." + lang + "." + item.mode);

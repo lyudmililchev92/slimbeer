@@ -648,7 +648,10 @@ const LANGS = {
       noSaveLabel:"Voortgang", noSaveText:"wordt hier niet bewaard — open het bestand in een browser-app", restartTrack:"Opnieuw beginnen", restartTitle:"Weer bij niveau 1 beginnen?",
       restartText:"De niveaus gaan terug naar het begin. Sterren en geleerde woorden blijven.",
       trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT", trackForest:"LETTERBOS",
-      trackPhonics:"KLANKEN",
+      trackPhonics:"KLANKEN", trackStories:"VERHALEN",
+      storyListenAll:"Voorlezen", storyQuestions:"Vragen",
+      hintStoryListen:"Luister nog eens naar het verhaal.",
+      hintStoryReRead:"Lees de vraag nog eens.",
       promptSoundFirst:"Welk woord begint met deze klank?",
       promptSoundLast:"Welk woord eindigt met deze klank?",
       promptSoundSame:"Welk woord begint net zo?",
@@ -734,7 +737,10 @@ const LANGS = {
       noSaveLabel:"Прогрес", noSaveText:"тук не се запазва — отвори файла в приложение с браузър", restartTrack:"Започни отначало", restartTitle:"Да върнем ли на ниво 1?",
       restartText:"Нивата се връщат в началото. Звездите и научените думи остават.",
       trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ", trackForest:"В ГОРАТА",
-      trackPhonics:"ЗВУКОВЕ",
+      trackPhonics:"ЗВУКОВЕ", trackStories:"РАЗКАЗЧЕТА",
+      storyListenAll:"Чуй всичко", storyQuestions:"Въпроси",
+      hintStoryListen:"Чуй разказчето пак.",
+      hintStoryReRead:"Прочети въпроса пак.",
       promptSoundFirst:"Коя дума започва с този звук?",
       promptSoundLast:"Коя дума завършва с този звук?",
       promptSoundSame:"Коя дума започва по същия начин?",
@@ -874,7 +880,7 @@ function defaultTrackProgress(){
 function defaultLangProgress(){
   return { words: defaultTrackProgress(), math: defaultTrackProgress(),
            catch: defaultTrackProgress(), forest: defaultTrackProgress(),
-           phonics: defaultTrackProgress() };
+           phonics: defaultTrackProgress(), stories: defaultTrackProgress() };
 }
 
 /* Прогресът по думи и нива е отделен за всеки език — ученето на
@@ -894,7 +900,7 @@ function defaultProgress(){
   };
 }
 
-const TRACK_IDS = ["words", "math", "catch", "forest", "phonics"];
+const TRACK_IDS = ["words", "math", "catch", "forest", "phonics", "stories"];
 
 const Store = {
   load(){
@@ -1175,6 +1181,12 @@ const Mastery = {
 function skillsForRound(item, modeId, lang){
   const ids = [];
   if(!item) return ids;
+
+  if(item.sentences){                             // разказче
+    ids.push("reading." + lang + ".comprehension");
+    ids.push("story." + lang + ".level." + item.level);
+    return ids;
+  }
 
   if(item.kind === "phonics"){                    // задача по звукове
     if(item.sound) ids.push("sound." + lang + "." + item.sound);
@@ -1874,6 +1886,577 @@ PHONICS.nl = {
     { id:12, modes:["first","last","same","odd","syllable"], sounds:[],                        maxLen:8,  wordsToPass:9 }
   ]
 };
+
+/* ==== src/games/reading/stories.js ==== */
+/* =========================================================================
+ * РАЗКАЗЧЕТА
+ * -------------------------------------------------------------------------
+ * Мостът между „чета дума“ и „разбирам какво се случва“.
+ *
+ * Всяко изречение си има високоговорител, но нищо не се изговаря само.
+ * Детето решава дали да чете, или да слуша — насила изговорено изречение
+ * учи на слушане, не на четене.
+ *
+ * Едно разказче е един рунд: чете се, после идват въпросите. Грешката не
+ * наказва — въпросът просто изчаква следващия опит.
+ * ========================================================================= */
+
+const STORIES = {};        // пълни се от stories-bg.js и stories-nl.js
+
+function storyPack(lang){ return STORIES[lang || State.progress.language] || STORIES.bg; }
+
+/* Шест нива, като дължината на разказчето расте. Нивото е филтър. */
+const STORY_LEVELS = [
+  { id:1, maxStoryLevel:1, wordsToPass:2 },
+  { id:2, maxStoryLevel:2, wordsToPass:2 },
+  { id:3, maxStoryLevel:3, wordsToPass:2 },
+  { id:4, maxStoryLevel:4, wordsToPass:2 },
+  { id:5, maxStoryLevel:5, wordsToPass:2 },
+  { id:6, maxStoryLevel:6, wordsToPass:3 }
+];
+
+function pickStory(level){
+  const all = storyPack().filter(s => s.level <= (level.maxStoryLevel || 6));
+  if(!all.length) return null;
+  const recent = State.session.recent;
+  let cands = all.filter(s => recent.indexOf(s.id) < 0);
+  if(!cands.length) cands = all;
+  // непрочетените имат предимство, после се редува
+  const unread = cands.filter(s => !LP().words[s.id]);
+  return rand(unread.length ? unread : cands);
+}
+
+const MODE_STORY = {
+  id: "story", showsPicture: false, fullArea: true,
+  supports(){ return true; },
+
+  mount(root, host){
+    const story = host.item;
+    let mistakes = 0;
+    let qIndex = 0;
+    let phase = "read";                 // read → questions
+
+    const wrap = h("div", { class:"story" });
+    root.appendChild(wrap);
+
+    /* --- корица и изречения --- */
+    const head = h("div", { class:"story-head" },
+      h("span", { class:"story-scene" }, story.scene || "📖"),
+      h("h2", { class:"story-title" }, story.title));
+    wrap.appendChild(head);
+
+    const lines = h("div", { class:"story-lines" });
+    story.sentences.forEach((text, i) => {
+      const row = h("div", { class:"story-line" });
+      const say = h("button", { class:"line-listen", type:"button",
+                                "aria-label": t("listenLabel") }, "🔊");
+      say.addEventListener("click", () => {
+        Sfx.tap();
+        Speech.speak(text);
+        row.classList.remove("speaking");
+        void row.offsetWidth;
+        row.classList.add("speaking");
+      });
+      row.appendChild(say);
+      row.appendChild(h("p", { class:"line-text" }, text));
+      lines.appendChild(row);
+    });
+    wrap.appendChild(lines);
+
+    const actions = h("div", { class:"story-actions" });
+    const readAll = h("button", { class:"btn btn-warm", type:"button" }, "🔊 " + t("storyListenAll"));
+    readAll.addEventListener("click", () => {
+      Sfx.tap();
+      Speech.speak(story.sentences.join(" "));
+    });
+    const goQuestions = h("button", { class:"btn btn-primary", type:"button" }, t("storyQuestions") + " →");
+    goQuestions.addEventListener("click", () => { Sfx.tap(); showQuestion(); });
+    actions.append(readAll, goQuestions);
+    wrap.appendChild(actions);
+
+    /* --- въпроси --- */
+    const qBox = h("div", { class:"story-question", hidden: true });
+    wrap.appendChild(qBox);
+
+    function showQuestion(){
+      phase = "questions";
+      lines.hidden = true;
+      actions.hidden = true;
+      qBox.hidden = false;
+      qBox.innerHTML = "";
+
+      const q = story.questions[qIndex];
+      if(!q){                                    // всички въпроси свършиха
+        setTimeout(() => host.correct(mistakes), 200);
+        return;
+      }
+
+      const counter = h("div", { class:"q-counter" },
+        (qIndex + 1) + " / " + story.questions.length);
+      const prompt = h("p", { class:"prompt say" }, q.text);
+      prompt.setAttribute("role", "button");
+      prompt.setAttribute("tabindex", "0");
+      const sayQ = () => { Sfx.tap(); Speech.speak(q.text); };
+      prompt.addEventListener("click", sayQ);
+      qBox.append(counter, prompt);
+
+      const opts = h("div", { class:"options" });
+      let answered = false;
+      q.answers.forEach((text, i) => {
+        const b = h("button", { class:"opt-word", type:"button" }, text);
+        b.addEventListener("click", () => {
+          if(answered) return;
+          if(i === q.correct){
+            answered = true;
+            b.classList.add("right");
+            Sfx.place();
+            Speech.speak(text);
+            qIndex += 1;
+            setTimeout(showQuestion, 700);
+          } else {
+            mistakes++;
+            Sfx.wrong();
+            shakeEl(b);
+            host.mistake();
+          }
+        });
+        opts.appendChild(b);
+      });
+      qBox.appendChild(opts);
+      setTimeout(sayQ, 350);
+    }
+
+    return {
+      maxHints: 2,
+      hint(step){
+        if(phase === "read"){
+          Speech.speak(story.sentences.join(" "));
+          return t("hintStoryListen");
+        }
+        const q = story.questions[qIndex];
+        if(!q) return t("hintHereIs");
+        if(step === 1){ Speech.speak(q.text); return t("hintStoryReRead"); }
+        const right = qBox.querySelectorAll(".options button")[q.correct];
+        if(right) right.classList.add("right");
+        Speech.speak(q.answers[q.correct]);
+        return t("hintHereIs");
+      },
+      destroy(){}
+    };
+  }
+};
+
+/* ==== src/data/stories-bg.js ==== */
+/* =========================================================================
+ * РАЗКАЗЧЕТА — БЪЛГАРСКИ
+ * -------------------------------------------------------------------------
+ * Пътят е: чета дума → чета изречение → разбирам какво се случва.
+ *
+ * Първите разказчета са по две-три изречения с къси думи. По-нататък стават
+ * по-дълги, но никога не стават текст за четене наум — всяко изречение си
+ * има високоговорител.
+ *
+ * Героите са същите като в гората. Светът трябва да е един, а не сбор от
+ * несвързани учебникарски разказчета.
+ *
+ * Как се добавя разказче:
+ *
+ *   {
+ *     id: "нещо-уникално",
+ *     level: 1,                      1..6, колкото по-високо, толкова по-дълго
+ *     title: "Заглавие",
+ *     scene: "🌲",                   картинка за корицата
+ *     sentences: ["...", "..."],
+ *     questions: [
+ *       { text:"Въпрос?", answers:["а","б","в"], correct:2 },   // correct е индекс
+ *       { type:"finish", text:"Котето спи на ___.", answers:[...], correct:0 },
+ *       { type:"order", text:"Кое стана първо?", answers:[...], correct:1 }
+ *     ]
+ *   }
+ * ========================================================================= */
+
+STORIES.bg = [
+  {
+    id: "buki-topka", level: 1, title: "Буки и топката", scene: "⚽",
+    sentences: [
+      "Буки има топка.",
+      "Топката е синя.",
+      "Буки играе с Мечо."
+    ],
+    questions: [
+      { text: "Какъв цвят е топката?", answers: ["червена", "синя", "зелена"], correct: 1 },
+      { text: "С кого играе Буки?", answers: ["с Мечо", "с Лиско", "сам"], correct: 0 }
+    ]
+  },
+  {
+    id: "katerica-jalad", level: 1, title: "Катеричката и жълъдът", scene: "🐿️",
+    sentences: [
+      "Катеричката търси жълъди.",
+      "Тя намира три жълъда.",
+      "Катеричката е много доволна."
+    ],
+    questions: [
+      { text: "Колко жълъда намира?", answers: ["два", "три", "пет"], correct: 1 },
+      { type: "finish", text: "Катеричката търси ___.", answers: ["жълъди", "гъби", "цветя"], correct: 0 }
+    ]
+  },
+  {
+    id: "mecho-med", level: 2, title: "Мечо и медът", scene: "🍯",
+    sentences: [
+      "Мечо е гладен.",
+      "Той търси мед в гората.",
+      "Пчелата му дава малко мед.",
+      "Мечо казва благодаря."
+    ],
+    questions: [
+      { text: "Какво търси Мечо?", answers: ["мед", "риба", "ябълки"], correct: 0 },
+      { text: "Кой му дава мед?", answers: ["Буки", "пчелата", "Лиско"], correct: 1 },
+      { type: "order", text: "Кое става първо?", answers: ["Мечо казва благодаря", "Мечо е гладен", "Пчелата му дава мед"], correct: 1 }
+    ]
+  },
+  {
+    id: "lisko-dajd", level: 2, title: "Лиско и дъждът", scene: "🌧️",
+    sentences: [
+      "Вали дъжд.",
+      "Лиско няма чадър.",
+      "Той се крие под голямото дърво.",
+      "Скоро слънцето изгрява пак."
+    ],
+    questions: [
+      { text: "Къде се крие Лиско?", answers: ["в къщата", "под дървото", "в реката"], correct: 1 },
+      { type: "finish", text: "Лиско няма ___.", answers: ["чадър", "шапка", "топка"], correct: 0 }
+    ]
+  },
+  {
+    id: "buhalcho-noshtta", level: 3, title: "Бухалчо не спи", scene: "🦉",
+    sentences: [
+      "Нощта е тиха и тъмна.",
+      "Всички животни спят.",
+      "Само Бухалчо е буден.",
+      "Той брои звездите на небето.",
+      "Едно, две, три… и заспива."
+    ],
+    questions: [
+      { text: "Кой е буден през нощта?", answers: ["Мечо", "Бухалчо", "Зайко"], correct: 1 },
+      { text: "Какво брои Бухалчо?", answers: ["звездите", "жълъдите", "дърветата"], correct: 0 },
+      { type: "order", text: "Кое става накрая?", answers: ["Бухалчо заспива", "Животните спят", "Бухалчо брои"], correct: 0 }
+    ]
+  },
+  {
+    id: "zajko-morkov", level: 3, title: "Морковът на Зайко", scene: "🥕",
+    sentences: [
+      "Зайко сади морков в градината.",
+      "Всеки ден го полива с вода.",
+      "Морковът расте бавно.",
+      "Накрая става голям и оранжев.",
+      "Зайко го дава на приятелите си."
+    ],
+    questions: [
+      { text: "Какво сади Зайко?", answers: ["цвете", "морков", "дърво"], correct: 1 },
+      { text: "Какъв става морковът?", answers: ["малък и зелен", "голям и оранжев", "кръгъл и червен"], correct: 1 },
+      { type: "finish", text: "Зайко полива моркова с ___.", answers: ["вода", "мед", "мляко"], correct: 0 }
+    ]
+  },
+  {
+    id: "pingvin-led", level: 4, title: "Пингвинът и ледът", scene: "🐧",
+    sentences: [
+      "Пингвинът живее там, където е студено.",
+      "Той се пързаля по леда цял ден.",
+      "Един ден ледът се стопява малко.",
+      "Пингвинът се уплашва и вика за помощ.",
+      "Буки идва бързо и му подава ръка.",
+      "Двамата се смеят и стават приятели."
+    ],
+    questions: [
+      { text: "Къде живее пингвинът?", answers: ["в гората", "където е студено", "в морето"], correct: 1 },
+      { text: "Кой му помага?", answers: ["Буки", "Мечо", "Лиско"], correct: 0 },
+      { type: "order", text: "Кое става първо?", answers: ["Буки помага", "Ледът се стопява", "Пингвинът се пързаля"], correct: 2 }
+    ]
+  },
+  {
+    id: "feya-krystal", level: 4, title: "Феята и кристалът", scene: "🔮",
+    sentences: [
+      "Дълбоко в пещерата свети син кристал.",
+      "Феята иска да го покаже на всички.",
+      "Но пещерата е тъмна и страшна.",
+      "Буки взима фенер и тръгва с нея.",
+      "Заедно намират кристала.",
+      "Той свети като малка звезда."
+    ],
+    questions: [
+      { text: "Какво свети в пещерата?", answers: ["кристал", "огън", "луна"], correct: 0 },
+      { text: "Какво взима Буки?", answers: ["чадър", "фенер", "въже"], correct: 1 },
+      { type: "finish", text: "Пещерата е тъмна и ___.", answers: ["страшна", "топла", "весела"], correct: 0 }
+    ]
+  },
+  {
+    id: "boburt-most", level: 5, title: "Бобърът строи мост", scene: "🦫",
+    sentences: [
+      "Реката е широка и бърза.",
+      "Животните не могат да минат от другата страна.",
+      "Бобърът събира клечки цяла сутрин.",
+      "Той ги подрежда една върху друга.",
+      "Бавно се появява малък мост.",
+      "Сега всички минават без да се мокрят.",
+      "Бобърът се усмихва и си почива."
+    ],
+    questions: [
+      { text: "Какво строи бобърът?", answers: ["къща", "мост", "лодка"], correct: 1 },
+      { text: "От какво го строи?", answers: ["от камъни", "от клечки", "от лед"], correct: 1 },
+      { type: "order", text: "Кое става последно?", answers: ["Бобърът си почива", "Реката е широка", "Бобърът събира клечки"], correct: 0 }
+    ]
+  },
+  {
+    id: "mishle-sirene", level: 5, title: "Мишлето и сиренето", scene: "🧀",
+    sentences: [
+      "Мишлето намира голямо парче сирене.",
+      "То е толкова голямо, че мишлето не може да го носи.",
+      "Мишлето мисли дълго време.",
+      "После вика приятелите си на помощ.",
+      "Заедно носят сиренето до дома.",
+      "Вечерта всички ядат заедно.",
+      "Сиренето стига за всички."
+    ],
+    questions: [
+      { text: "Защо мишлето не носи сиренето?", answers: ["много е тежко", "не го харесва", "изгубило се е"], correct: 0 },
+      { text: "Кой му помага?", answers: ["никой", "приятелите му", "котката"], correct: 1 },
+      { type: "finish", text: "Сиренето стига за ___.", answers: ["всички", "едно мишле", "утре"], correct: 0 }
+    ]
+  },
+  {
+    id: "buki-uchi", level: 6, title: "Буки се учи да чете", scene: "📖",
+    sentences: [
+      "Буки иска да чете като големите.",
+      "Отначало буквите му приличат на рисунки.",
+      "Той се опитва пак и пак, но не се получава.",
+      "Мечо му казва да не бърза.",
+      "Всеки ден Буки научава по една буква.",
+      "После две букви стават сричка.",
+      "А сричките стават дума.",
+      "Един ден Буки прочита цяло изречение сам."
+    ],
+    questions: [
+      { text: "Какво иска Буки?", answers: ["да чете", "да спи", "да лети"], correct: 0 },
+      { text: "Какво му казва Мечо?", answers: ["да спре", "да не бърза", "да пита друг"], correct: 1 },
+      { type: "order", text: "Кое става първо?", answers: ["Буки чете изречение", "Буки научава буква", "Сричките стават дума"], correct: 1 }
+    ]
+  },
+  {
+    id: "gorata-nosht", level: 6, title: "Нощта в гората", scene: "🌙",
+    sentences: [
+      "Слънцето залязва бавно зад дърветата.",
+      "Небето става розово, после тъмносиньо.",
+      "Светулките светват една по една.",
+      "Прилепът излиза да търси гъби.",
+      "Бухалчо пази гората отгоре.",
+      "Всички други животни се прибират у дома.",
+      "Гората заспива тихо.",
+      "Утре ще има нов ден и нови приключения."
+    ],
+    questions: [
+      { text: "Какво правят светулките?", answers: ["спят", "светят", "пеят"], correct: 1 },
+      { text: "Кой пази гората?", answers: ["Бухалчо", "прилепът", "Мечо"], correct: 0 },
+      { type: "finish", text: "Утре ще има нов ___.", answers: ["ден", "дъжд", "сняг"], correct: 0 }
+    ]
+  }
+];
+
+/* ==== src/data/stories-nl.js ==== */
+/* =========================================================================
+ * VERHAALTJES — NEDERLANDS
+ * -------------------------------------------------------------------------
+ * Същите герои и същата подредба като в българските разказчета, но текстът
+ * е писан на нидерландски, а не преведен дума по дума. Дължината на
+ * изреченията и трудността на думите се различават между двата езика.
+ *
+ * Форматът е обяснен в stories-bg.js.
+ * ========================================================================= */
+
+STORIES.nl = [
+  {
+    id: "buki-bal", level: 1, title: "Boekie en de bal", scene: "⚽",
+    sentences: [
+      "Boekie heeft een bal.",
+      "De bal is blauw.",
+      "Boekie speelt met Beer."
+    ],
+    questions: [
+      { text: "Welke kleur heeft de bal?", answers: ["rood", "blauw", "groen"], correct: 1 },
+      { text: "Met wie speelt Boekie?", answers: ["met Beer", "met Vos", "alleen"], correct: 0 }
+    ]
+  },
+  {
+    id: "eekhoorn-eikel", level: 1, title: "De eekhoorn zoekt", scene: "🐿️",
+    sentences: [
+      "De eekhoorn zoekt eikels.",
+      "Zij vindt er drie.",
+      "De eekhoorn is heel blij."
+    ],
+    questions: [
+      { text: "Hoeveel eikels vindt zij?", answers: ["twee", "drie", "vijf"], correct: 1 },
+      { type: "finish", text: "De eekhoorn zoekt ___.", answers: ["eikels", "paddenstoelen", "bloemen"], correct: 0 }
+    ]
+  },
+  {
+    id: "beer-honing", level: 2, title: "Beer en de honing", scene: "🍯",
+    sentences: [
+      "Beer heeft honger.",
+      "Hij zoekt honing in het bos.",
+      "De bij geeft hem een beetje honing.",
+      "Beer zegt dank je wel."
+    ],
+    questions: [
+      { text: "Wat zoekt Beer?", answers: ["honing", "vis", "appels"], correct: 0 },
+      { text: "Wie geeft hem honing?", answers: ["Boekie", "de bij", "de vos"], correct: 1 },
+      { type: "order", text: "Wat gebeurt eerst?", answers: ["Beer zegt dank je wel", "Beer heeft honger", "De bij geeft honing"], correct: 1 }
+    ]
+  },
+  {
+    id: "vos-regen", level: 2, title: "De vos en de regen", scene: "🌧️",
+    sentences: [
+      "Het regent hard.",
+      "De vos heeft geen paraplu.",
+      "Hij schuilt onder de grote boom.",
+      "Straks schijnt de zon weer."
+    ],
+    questions: [
+      { text: "Waar schuilt de vos?", answers: ["in huis", "onder de boom", "in de rivier"], correct: 1 },
+      { type: "finish", text: "De vos heeft geen ___.", answers: ["paraplu", "muts", "bal"], correct: 0 }
+    ]
+  },
+  {
+    id: "uil-nacht", level: 3, title: "De uil slaapt niet", scene: "🦉",
+    sentences: [
+      "De nacht is stil en donker.",
+      "Alle dieren slapen.",
+      "Alleen de uil is wakker.",
+      "Hij telt de sterren aan de hemel.",
+      "Een, twee, drie… en hij valt in slaap."
+    ],
+    questions: [
+      { text: "Wie is wakker in de nacht?", answers: ["Beer", "de uil", "het konijn"], correct: 1 },
+      { text: "Wat telt de uil?", answers: ["de sterren", "de eikels", "de bomen"], correct: 0 },
+      { type: "order", text: "Wat gebeurt op het laatst?", answers: ["De uil valt in slaap", "De dieren slapen", "De uil telt"], correct: 0 }
+    ]
+  },
+  {
+    id: "konijn-wortel", level: 3, title: "De wortel van het konijn", scene: "🥕",
+    sentences: [
+      "Het konijn plant een wortel in de tuin.",
+      "Elke dag geeft het water.",
+      "De wortel groeit langzaam.",
+      "Op het laatst wordt hij groot en oranje.",
+      "Het konijn geeft hem aan zijn vrienden."
+    ],
+    questions: [
+      { text: "Wat plant het konijn?", answers: ["een bloem", "een wortel", "een boom"], correct: 1 },
+      { text: "Hoe wordt de wortel?", answers: ["klein en groen", "groot en oranje", "rond en rood"], correct: 1 },
+      { type: "finish", text: "Het konijn geeft de wortel ___.", answers: ["water", "honing", "melk"], correct: 0 }
+    ]
+  },
+  {
+    id: "pinguin-ijs", level: 4, title: "De pinguïn en het ijs", scene: "🐧",
+    sentences: [
+      "De pinguïn woont waar het koud is.",
+      "Hij glijdt de hele dag over het ijs.",
+      "Op een dag smelt het ijs een beetje.",
+      "De pinguïn schrikt en roept om hulp.",
+      "Boekie komt snel en geeft hem een hand.",
+      "Samen lachen ze en worden vrienden."
+    ],
+    questions: [
+      { text: "Waar woont de pinguïn?", answers: ["in het bos", "waar het koud is", "in de zee"], correct: 1 },
+      { text: "Wie helpt hem?", answers: ["Boekie", "Beer", "de vos"], correct: 0 },
+      { type: "order", text: "Wat gebeurt eerst?", answers: ["Boekie helpt", "Het ijs smelt", "De pinguïn glijdt"], correct: 2 }
+    ]
+  },
+  {
+    id: "fee-kristal", level: 4, title: "De fee en het kristal", scene: "🔮",
+    sentences: [
+      "Diep in de grot schijnt een blauw kristal.",
+      "De fee wil het aan iedereen laten zien.",
+      "Maar de grot is donker en eng.",
+      "Boekie pakt een lamp en gaat mee.",
+      "Samen vinden ze het kristal.",
+      "Het schijnt als een kleine ster."
+    ],
+    questions: [
+      { text: "Wat schijnt in de grot?", answers: ["een kristal", "een vuur", "de maan"], correct: 0 },
+      { text: "Wat pakt Boekie?", answers: ["een paraplu", "een lamp", "een touw"], correct: 1 },
+      { type: "finish", text: "De grot is donker en ___.", answers: ["eng", "warm", "vrolijk"], correct: 0 }
+    ]
+  },
+  {
+    id: "bever-brug", level: 5, title: "De bever bouwt een brug", scene: "🦫",
+    sentences: [
+      "De rivier is breed en snel.",
+      "De dieren kunnen niet naar de andere kant.",
+      "De bever verzamelt de hele ochtend stokjes.",
+      "Hij legt ze op elkaar.",
+      "Langzaam komt er een kleine brug.",
+      "Nu gaat iedereen erover zonder nat te worden.",
+      "De bever lacht en gaat rusten."
+    ],
+    questions: [
+      { text: "Wat bouwt de bever?", answers: ["een huis", "een brug", "een boot"], correct: 1 },
+      { text: "Waarvan bouwt hij het?", answers: ["van stenen", "van stokjes", "van ijs"], correct: 1 },
+      { type: "order", text: "Wat gebeurt op het laatst?", answers: ["De bever rust", "De rivier is breed", "De bever verzamelt stokjes"], correct: 0 }
+    ]
+  },
+  {
+    id: "muis-kaas", level: 5, title: "De muis en de kaas", scene: "🧀",
+    sentences: [
+      "De muis vindt een groot stuk kaas.",
+      "Het is zo groot dat de muis het niet kan dragen.",
+      "De muis denkt lang na.",
+      "Daarna roept hij zijn vrienden om hulp.",
+      "Samen dragen ze de kaas naar huis.",
+      "s Avonds eten ze allemaal samen.",
+      "De kaas is genoeg voor iedereen."
+    ],
+    questions: [
+      { text: "Waarom draagt de muis de kaas niet?", answers: ["hij is te zwaar", "hij lust hem niet", "hij is kwijt"], correct: 0 },
+      { text: "Wie helpt hem?", answers: ["niemand", "zijn vrienden", "de kat"], correct: 1 },
+      { type: "finish", text: "De kaas is genoeg voor ___.", answers: ["iedereen", "een muis", "morgen"], correct: 0 }
+    ]
+  },
+  {
+    id: "buki-leert", level: 6, title: "Boekie leert lezen", scene: "📖",
+    sentences: [
+      "Boekie wil lezen zoals de groten.",
+      "Eerst lijken de letters op tekeningen.",
+      "Hij probeert het steeds weer, maar het lukt niet.",
+      "Beer zegt dat hij rustig aan moet doen.",
+      "Elke dag leert Boekie een letter.",
+      "Daarna worden twee letters een lettergreep.",
+      "En lettergrepen worden een woord.",
+      "Op een dag leest Boekie een hele zin alleen."
+    ],
+    questions: [
+      { text: "Wat wil Boekie?", answers: ["lezen", "slapen", "vliegen"], correct: 0 },
+      { text: "Wat zegt Beer?", answers: ["stop maar", "rustig aan", "vraag iemand anders"], correct: 1 },
+      { type: "order", text: "Wat gebeurt eerst?", answers: ["Boekie leest een zin", "Boekie leert een letter", "Lettergrepen worden een woord"], correct: 1 }
+    ]
+  },
+  {
+    id: "bos-nacht", level: 6, title: "De nacht in het bos", scene: "🌙",
+    sentences: [
+      "De zon zakt langzaam achter de bomen.",
+      "De hemel wordt roze en daarna donkerblauw.",
+      "De glimwormen gaan een voor een aan.",
+      "De vleermuis gaat paddenstoelen zoeken.",
+      "De uil bewaakt het bos van boven.",
+      "Alle andere dieren gaan naar huis.",
+      "Het bos valt stil in slaap.",
+      "Morgen is er een nieuwe dag met nieuwe avonturen."
+    ],
+    questions: [
+      { text: "Wat doen de glimwormen?", answers: ["slapen", "aangaan", "zingen"], correct: 1 },
+      { text: "Wie bewaakt het bos?", answers: ["de uil", "de vleermuis", "Beer"], correct: 0 },
+      { type: "finish", text: "Morgen is er een nieuwe ___.", answers: ["dag", "regen", "sneeuw"], correct: 0 }
+    ]
+  }
+];
 
 /* ==== src/games/reading/arrange.js ==== */
 /* =========================================================================
@@ -3883,6 +4466,15 @@ const TRACKS = {
     speak: (item) => item.display,
     label: (item) => item.word
   },
+  stories: {
+    id:"stories", icon:"\uD83D\uDCDA",
+    levels: () => STORY_LEVELS,
+    pickItem: (level) => pickStory(level),
+    pickMode: () => MODE_STORY,
+    itemKey: (item) => item.id,
+    speak: (item) => item.title,
+    label: (item) => item.title
+  },
   phonics: {
     id:"phonics", icon:"\uD83D\uDC42",
     levels: () => phonicsPack().levels,
@@ -4324,7 +4916,8 @@ Screens.home = function(){
       trackCard("math",  "trackMath",  "🔢", "t-math"),
       trackCard("catch", "trackCatch", "🕹️", "t-catch"),
       trackCard("forest", "trackForest", "🌲", "t-forest"),
-      trackCard("phonics", "trackPhonics", "👂", "t-phonics"));
+      trackCard("phonics", "trackPhonics", "👂", "t-phonics"),
+      trackCard("stories", "trackStories", "📚", "t-stories"));
     const playBtn = tracks.firstChild;
 
     const row = h("div", { class:"home-row" },

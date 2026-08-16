@@ -72,7 +72,8 @@ function loadContext(files){
     "buildWords", "WORD_SOURCE", "MATH_LEVELS", "pickMathItem", "mathAnswer", "numberOptions",
     "pickWord", "wordPool", "LEVELS", "setWords",
     "PHONICS", "phonicsPack", "firstSound", "lastSound", "soundSay",
-    "buildPhonicsIndex", "pickPhonicsItem", "phonicsCue"
+    "buildPhonicsIndex", "pickPhonicsItem", "phonicsCue",
+    "STORIES", "STORY_LEVELS", "pickStory", "storyPack"
   ].join(", ") + " };", ctx, { filename: "buki-bundle" });
   return ctx.__api;
 }
@@ -93,6 +94,9 @@ const CORE = [
   "src/games/math/generators.js",
   "__mode-stubs__",
   "src/games/reading/reading.js",
+  "src/games/reading/stories.js",
+  "src/data/stories-bg.js",
+  "src/data/stories-nl.js",
   "src/games/phonics/phonics.js",
   "src/data/phonics-bg.js",
   "src/data/phonics-nl.js"
@@ -410,6 +414,74 @@ group("Звукове — задачите");
      [...new Set(problems)].slice(0, 4).join(" | "));
   ok("всичките шест вида упражнения се появяват", Object.keys(byMode).length === 6,
      Object.keys(byMode).join(" "));
+})();
+
+/* ==================================================================== */
+group("Разказчета");
+
+(function(){
+  const bad = [];
+  const ids = new Set();
+  let total = 0, questions = 0;
+
+  for(const lang of ["bg", "nl"]){
+    const pack = api.STORIES[lang];
+    if(!pack || !pack.length){ bad.push(lang + ": няма разказчета"); continue; }
+    pack.forEach(st => {
+      total++;
+      const where = lang + "/" + st.id;
+      if(!st.id) bad.push(lang + ": разказче без id");
+      if(ids.has(lang + st.id)) bad.push(where + ": повторено id");
+      ids.add(lang + st.id);
+      if(!st.title || !st.title.trim()) bad.push(where + ": без заглавие");
+      if(!st.scene) bad.push(where + ": без картинка");
+      if(!(st.level >= 1 && st.level <= 6)) bad.push(where + ": ниво извън 1..6");
+      if(!Array.isArray(st.sentences) || st.sentences.length < 2) bad.push(where + ": под две изречения");
+      st.sentences.forEach(x => {
+        if(!x || !x.trim()) bad.push(where + ": празно изречение");
+        if(!/[.!?]$/.test(x.trim())) bad.push(where + ": изречение без препинателен знак → " + x);
+      });
+      // дължината трябва да расте с нивото, иначе прогресията е измислена
+      if(st.level <= 2 && st.sentences.length > 4) bad.push(where + ": твърде дълго за ниво " + st.level);
+      if(st.level >= 5 && st.sentences.length < 6) bad.push(where + ": твърде късо за ниво " + st.level);
+      if(!Array.isArray(st.questions) || !st.questions.length) bad.push(where + ": без въпроси");
+      (st.questions || []).forEach((q, i) => {
+        questions++;
+        const w2 = where + " въпрос " + (i + 1);
+        if(!q.text || !q.text.trim()) bad.push(w2 + ": без текст");
+        if(!Array.isArray(q.answers) || q.answers.length < 3) bad.push(w2 + ": под три отговора");
+        if(new Set(q.answers).size !== q.answers.length) bad.push(w2 + ": повтарящ се отговор");
+        if(!(q.correct >= 0 && q.correct < (q.answers || []).length)) bad.push(w2 + ": верният отговор сочи никъде");
+        (q.answers || []).forEach(a => { if(!a || !String(a).trim()) bad.push(w2 + ": празен отговор"); });
+      });
+    });
+  }
+
+  ok(total + " разказчета и " + questions + " въпроса без нито един проблем",
+     bad.length === 0, bad.slice(0, 4).join(" | "));
+  ok("двата езика имат еднакъв брой разказчета",
+     api.STORIES.bg.length === api.STORIES.nl.length,
+     api.STORIES.bg.length + " срещу " + api.STORIES.nl.length);
+  ok("има разказчета за всяко от шестте нива",
+     [1,2,3,4,5,6].every(l => api.STORIES.bg.some(s => s.level === l)));
+
+  // изборът връща разказче за всяко ниво и не повтаря скоро четеното
+  api.State.progress = api.defaultProgress();
+  api.State.progress.language = "bg";
+  const seen = [];
+  for(const lvl of api.STORY_LEVELS){
+    api.State.session.recent = [];
+    for(let i = 0; i < 50; i++){
+      const st = api.pickStory(lvl);
+      if(!st){ bad.push("ниво " + lvl.id + ": няма разказче"); break; }
+      if(st.level > lvl.maxStoryLevel) bad.push("ниво " + lvl.id + ": разказче над нивото");
+      api.State.session.recent.push(st.id);
+      if(api.State.session.recent.length > api.CONFIG.recentMemory) api.State.session.recent.shift();
+      seen.push(st.id);
+    }
+  }
+  ok("всяко ниво връща подходящо разказче", bad.length === 0, bad.slice(0, 3).join(" | "));
+  ok("изборът стига до различни разказчета", new Set(seen).size >= 8, String(new Set(seen).size));
 })();
 
 /* ==================================================================== */

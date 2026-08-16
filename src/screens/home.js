@@ -22,7 +22,8 @@ Screens.home = function(){
       trackCard("math",  "trackMath",  "🔢", "t-math"),
       trackCard("catch", "trackCatch", "🕹️", "t-catch"),
       trackCard("forest", "trackForest", "🌲", "t-forest"),
-      trackCard("phonics", "trackPhonics", "👂", "t-phonics"));
+      trackCard("phonics", "trackPhonics", "👂", "t-phonics"),
+      trackCard("stories", "trackStories", "📚", "t-stories"));
     const playBtn = tracks.firstChild;
 
     const row = h("div", { class:"home-row" },

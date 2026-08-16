@@ -32,6 +32,15 @@ const TRACKS = {
     speak: (item) => item.display,
     label: (item) => item.word
   },
+  stories: {
+    id:"stories", icon:"\uD83D\uDCDA",
+    levels: () => STORY_LEVELS,
+    pickItem: (level) => pickStory(level),
+    pickMode: () => MODE_STORY,
+    itemKey: (item) => item.id,
+    speak: (item) => item.title,
+    label: (item) => item.title
+  },
   phonics: {
     id:"phonics", icon:"\uD83D\uDC42",
     levels: () => phonicsPack().levels,
