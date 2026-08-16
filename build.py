@@ -58,6 +58,7 @@ SOURCES = [
     "src/games/math/modes.js",
     "src/games/letter-hunt/catch.js",
     "src/data/forest-world.js",
+    "src/data/forest-friends.js",
     "src/games/forest/forest.js",
 
     # нива и пътища
@@ -71,6 +72,7 @@ SOURCES = [
     "src/screens/play-screen.js",
     "src/screens/letters.js",
     "src/screens/write.js",
+    "src/screens/friends.js",
     "src/screens/stars.js",
     "src/screens/parents.js",
     "src/games/writing/tracing.js",

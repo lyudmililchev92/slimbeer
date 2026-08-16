@@ -31,6 +31,8 @@ function defaultProgress(){
     tutorialCompleted: false,
     // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
     mastery: {},
+    // v5: какво е открило детето. Звездите не са валута, а следа от игра.
+    discoveries: { friends: {}, biomes: {} },
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -81,6 +83,10 @@ const Store = {
     // v3 → v4: уменията са нови. Стар запис просто тръгва с празни —
     // напредъкът по нива и думи не се пипа.
     if(!out.mastery || typeof out.mastery !== "object") out.mastery = {};
+    // v4 → v5: откритията са нови и тръгват празни
+    if(!out.discoveries || typeof out.discoveries !== "object") out.discoveries = {};
+    if(!out.discoveries.friends || typeof out.discoveries.friends !== "object") out.discoveries.friends = {};
+    if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){

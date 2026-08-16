@@ -200,6 +200,9 @@ const MODE_FOREST = {
         gateOut = true;
         items.push({ kind:"gate", x: camX + W * 1.25, hgt:0.34, taken:false, bob:0 });
         Sfx.star();
+        // Поръчката е изпълнена — приятелят и мястото влизат в колекцията.
+        discover("friends", String(FOREST_FRIENDS.indexOf(Q)));
+        discover("biomes", lvl.theme || "day");
       }
     }
 

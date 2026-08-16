@@ -28,6 +28,7 @@ Screens.home = function(){
 
     const row = h("div", { class:"home-row" },
       navBtn("🔤", t("letters"), () => Router.go("letters")),
+      navBtn("🦊", t("friends"), () => Router.go("friends")),
       navBtn("⭐", t("stars"), () => Router.go("stars")),
       navBtn("⚙️", t("settings"), () => Router.go("parents"))
     );

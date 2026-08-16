@@ -61,6 +61,22 @@ function recordResult(item, mistakes, hintsUsed, modeId){
   return { stars, leveledUp };
 }
 
+/* Открито нещо ново. Звездите не са валута — те са следа, че детето е
+   било някъде. Затова откритията се пазят отделно и не се харчат. */
+function discover(kind, id){
+  const d = State.progress.discoveries || (State.progress.discoveries = { friends:{}, biomes:{} });
+  const box = d[kind] || (d[kind] = {});
+  if(box[id]) return false;
+  box[id] = Date.now();
+  Store.save();
+  return true;
+}
+
+function discoveredCount(kind){
+  const d = State.progress.discoveries || {};
+  return Object.keys(d[kind] || {}).length;
+}
+
 function addStars(n){
   State.progress.totalStars += n;
   Store.save();

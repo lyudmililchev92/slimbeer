@@ -395,7 +395,7 @@ const DEBUG = false;                 // true → показва debug панел
 
 const CONFIG = {
   saveKey: "bukvik.save",
-  saveVersion: 4,
+  saveVersion: 5,
   starsPerWord: { perfect: 3, good: 2, ok: 1 },
   mistakesForHighlight: 2,           // след толкова грешки — ненатрапчиво подсказваме
   celebrateEvery: 5,                 // на всеки N решени думи — малък празник
@@ -650,6 +650,13 @@ const LANGS = {
       trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT", trackForest:"LETTERBOS",
       trackPhonics:"KLANKEN", trackStories:"VERHALEN",
       writeFree:"Zelf", writeGuided:"Stap voor stap",
+      friends:"Vrienden", friendsTitle:"Mijn vrienden",
+      friendUnknown:"Deze ken je nog niet. Speel verder in het bos!",
+      friendLives:"Woont in", friendLikes:"Houdt van", friendLetter:"Zijn letter is",
+      close:"Klaar",
+      biome_meadow:"de wei", biome_day:"het bos", biome_autumn:"het herfstbos",
+      biome_dusk:"de avondlucht", biome_night:"de nacht", biome_winter:"de sneeuw",
+      biome_blossom:"de lente", biome_beach:"het strand", biome_cave:"de grot",
       guideHint:"Begin bij het bolletje met het cijfer.",
       guideNext:"Goed! Nu de volgende.",
       storyListenAll:"Voorlezen", storyQuestions:"Vragen",
@@ -742,6 +749,13 @@ const LANGS = {
       trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ", trackForest:"В ГОРАТА",
       trackPhonics:"ЗВУКОВЕ", trackStories:"РАЗКАЗЧЕТА",
       writeFree:"Сам", writeGuided:"Стъпка по стъпка",
+      friends:"Приятели", friendsTitle:"Моите приятели",
+      friendUnknown:"Този още не си го срещнал. Играй още в гората!",
+      friendLives:"Живее в", friendLikes:"Обича", friendLetter:"Буквата му е",
+      close:"Готово",
+      biome_meadow:"ливадата", biome_day:"гората", biome_autumn:"есенната гора",
+      biome_dusk:"вечерното небе", biome_night:"нощта", biome_winter:"снега",
+      biome_blossom:"пролетта", biome_beach:"плажа", biome_cave:"пещерата",
       guideHint:"Започни от кръгчето с числото.",
       guideNext:"Браво! Сега следващата.",
       storyListenAll:"Чуй всичко", storyQuestions:"Въпроси",
@@ -902,6 +916,8 @@ function defaultProgress(){
     tutorialCompleted: false,
     // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
     mastery: {},
+    // v5: какво е открило детето. Звездите не са валута, а следа от игра.
+    discoveries: { friends: {}, biomes: {} },
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -952,6 +968,10 @@ const Store = {
     // v3 → v4: уменията са нови. Стар запис просто тръгва с празни —
     // напредъкът по нива и думи не се пипа.
     if(!out.mastery || typeof out.mastery !== "object") out.mastery = {};
+    // v4 → v5: откритията са нови и тръгват празни
+    if(!out.discoveries || typeof out.discoveries !== "object") out.discoveries = {};
+    if(!out.discoveries.friends || typeof out.discoveries.friends !== "object") out.discoveries.friends = {};
+    if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){
@@ -1043,6 +1063,22 @@ function recordResult(item, mistakes, hintsUsed, modeId){
   }
   Store.save();
   return { stars, leveledUp };
+}
+
+/* Открито нещо ново. Звездите не са валута — те са следа, че детето е
+   било някъде. Затова откритията се пазят отделно и не се харчат. */
+function discover(kind, id){
+  const d = State.progress.discoveries || (State.progress.discoveries = { friends:{}, biomes:{} });
+  const box = d[kind] || (d[kind] = {});
+  if(box[id]) return false;
+  box[id] = Date.now();
+  Store.save();
+  return true;
+}
+
+function discoveredCount(kind){
+  const d = State.progress.discoveries || {};
+  return Object.keys(d[kind] || {}).length;
 }
 
 function addStars(n){
@@ -3451,41 +3487,217 @@ const FOREST_THEMES = {
             stars:false, rock:true }
 };
 
-/* Всяко ниво е малка история: горски приятел има нужда от нещо и детето
-   му го събира по пътя. Буквите висят наоколо като допълнение — носят
-   бонус звезди, но портата се отваря от мисията. */
-const FOREST_QUESTS = [
-  { who:"🐿️", item:"🌰", nl:"eikels",     bg:"жълъди" },
-  { who:"🐦", item:"🥚", nl:"eieren",     bg:"яйца" },
-  { who:"🐝", item:"🌸", nl:"bloemen",    bg:"цветя" },
-  { who:"🦔", item:"🍎", nl:"appels",     bg:"ябълки" },
-  { who:"🐸", item:"💧", nl:"druppels",   bg:"капки" },
-  { who:"🦋", item:"🍃", nl:"blaadjes",   bg:"листа" },
-  { who:"🐰", item:"🥕", nl:"wortels",    bg:"моркови" },
-  { who:"🐻", item:"🍯", nl:"honing",     bg:"мед" },
-  { who:"🦊", item:"🫐", nl:"bessen",     bg:"боровинки" },
-  { who:"🦉", item:"⭐", nl:"sterren",    bg:"звезди" },
-  { who:"🦇", item:"🍄", nl:"paddenstoelen", bg:"гъби" },
-  { who:"🐉", item:"💎", nl:"kristallen", bg:"кристали" },
-  { who:"🐺", item:"🦴", nl:"botjes",     bg:"кокали" },
-  { who:"🕷️", item:"🕸️", nl:"webben",     bg:"паяжини" },
-  { who:"🐧", item:"🧊", nl:"ijsblokjes",  bg:"ледчета" },
-  { who:"⛄", item:"❄️", nl:"sneeuwvlokken", bg:"снежинки" },
-  { who:"🦌", item:"🎁", nl:"cadeaus",    bg:"подаръци" },
-  { who:"🐢", item:"🍀", nl:"klavertjes", bg:"детелини" },
-  { who:"🦜", item:"🥜", nl:"pinda's",    bg:"фъстъци" },
-  { who:"🦫", item:"🪵", nl:"stokjes",    bg:"клечки" },
-  { who:"🐨", item:"🌿", nl:"kruiden",    bg:"стръкчета" },
-  { who:"🐼", item:"🎋", nl:"bamboe",     bg:"бамбук" },
-  { who:"🐣", item:"🌾", nl:"korenaren",  bg:"класчета" },
-  { who:"🦀", item:"🐚", nl:"schelpen",   bg:"мидички" },
-  { who:"🐬", item:"🎈", nl:"ballonnen",  bg:"балони" },
-  { who:"🦭", item:"🍦", nl:"ijsjes",     bg:"сладоледи" },
-  { who:"🐭", item:"🧀", nl:"kaasjes",    bg:"парченца сирене" },
-  { who:"🐛", item:"🍇", nl:"druiven",    bg:"гроздове" },
-  { who:"🦄", item:"🌈", nl:"regenbogen", bg:"дъги" },
-  { who:"🧚", item:"🔮", nl:"toverbollen", bg:"вълшебни кълба" }
+/* Приятелите и поръчките им живеят в forest-friends.js. */
+
+/* Колко различни места има гората — ползва се от колекцията. */
+const FOREST_BIOME_COUNT = Object.keys(FOREST_THEMES).length;
+
+/* ==== src/data/forest-friends.js ==== */
+/* =========================================================================
+ * ГОРСКИТЕ ПРИЯТЕЛИ
+ * -------------------------------------------------------------------------
+ * Всяко ниво в гората е поръчка от някого. Тук е кой е този някой.
+ *
+ * Приятелят се „открива“, щом детето изпълни поръчката му. Открият ли се,
+ * влизат в колекцията с картичка: къде живее, какво обича и с коя буква
+ * започва името му. Неоткритите стоят като въпросителна — покана, не
+ * заключалка.
+ *
+ * Полетата:
+ *   who    емоджи на приятеля
+ *   item   какво иска да му се събере
+ *   name   името му на двата езика
+ *   biome  къде живее
+ *   letter с коя буква започва името — различна е за всеки език
+ *   fact   нещо истинско за него, за разговор с родителя
+ * ========================================================================= */
+
+const FOREST_FRIENDS = [
+  { who:"🐿️", item:"🌰", biome:"day",
+    name:   { bg:"Катеричка", nl:"Eekhoorn" },
+    wants:  { bg:"жълъди", nl:"eikels" },
+    letter: { bg:"К", nl:"E" },
+    fact:   { bg:"Пази жълъдите си цяла зима.",
+              nl:"Bewaart haar eikels de hele winter." } },
+  { who:"🐦", item:"🥚", biome:"meadow",
+    name:   { bg:"Птичка", nl:"Vogel" },
+    wants:  { bg:"яйца", nl:"eieren" },
+    letter: { bg:"П", nl:"V" },
+    fact:   { bg:"Строи гнездо от клечки и мъх.",
+              nl:"Bouwt een nest van takjes en mos." } },
+  { who:"🐝", item:"🌸", biome:"meadow",
+    name:   { bg:"Пчела", nl:"Bij" },
+    wants:  { bg:"цветя", nl:"bloemen" },
+    letter: { bg:"П", nl:"B" },
+    fact:   { bg:"Танцува, за да покаже къде са цветята.",
+              nl:"Danst om te wijzen waar de bloemen zijn." } },
+  { who:"🦔", item:"🍎", biome:"autumn",
+    name:   { bg:"Таралеж", nl:"Egel" },
+    wants:  { bg:"ябълки", nl:"appels" },
+    letter: { bg:"Т", nl:"E" },
+    fact:   { bg:"Свива се на топка, когато се уплаши.",
+              nl:"Rolt zich op als hij schrikt." } },
+  { who:"🐸", item:"💧", biome:"day",
+    name:   { bg:"Жабка", nl:"Kikker" },
+    wants:  { bg:"капки", nl:"druppels" },
+    letter: { bg:"Ж", nl:"K" },
+    fact:   { bg:"Скача по-далече от собствения си ръст.",
+              nl:"Springt verder dan zijn eigen lengte." } },
+  { who:"🦋", item:"🍃", biome:"meadow",
+    name:   { bg:"Пеперуда", nl:"Vlinder" },
+    wants:  { bg:"листа", nl:"blaadjes" },
+    letter: { bg:"П", nl:"V" },
+    fact:   { bg:"Вкусва с крачетата си.",
+              nl:"Proeft met haar pootjes." } },
+  { who:"🐰", item:"🥕", biome:"day",
+    name:   { bg:"Зайко", nl:"Konijn" },
+    wants:  { bg:"моркови", nl:"wortels" },
+    letter: { bg:"З", nl:"K" },
+    fact:   { bg:"Ушите му чуват стъпки отдалече.",
+              nl:"Zijn oren horen stappen van ver." } },
+  { who:"🐻", item:"🍯", biome:"day",
+    name:   { bg:"Мечо", nl:"Beer" },
+    wants:  { bg:"мед", nl:"honing" },
+    letter: { bg:"М", nl:"B" },
+    fact:   { bg:"Спи цяла зима и сънува мед.",
+              nl:"Slaapt de hele winter en droomt van honing." } },
+  { who:"🦊", item:"🫐", biome:"autumn",
+    name:   { bg:"Лиско", nl:"Vos" },
+    wants:  { bg:"боровинки", nl:"bessen" },
+    letter: { bg:"Л", nl:"V" },
+    fact:   { bg:"Чува мишка под снега.",
+              nl:"Hoort een muis onder de sneeuw." } },
+  { who:"🦉", item:"⭐", biome:"night",
+    name:   { bg:"Бухалчо", nl:"Uil" },
+    wants:  { bg:"звезди", nl:"sterren" },
+    letter: { bg:"Б", nl:"U" },
+    fact:   { bg:"Обръща глава почти назад.",
+              nl:"Draait zijn kop bijna helemaal om." } },
+  { who:"🦇", item:"🍄", biome:"night",
+    name:   { bg:"Прилеп", nl:"Vleermuis" },
+    wants:  { bg:"гъби", nl:"paddenstoelen" },
+    letter: { bg:"П", nl:"V" },
+    fact:   { bg:"Вижда с ушите си в тъмното.",
+              nl:"Ziet met zijn oren in het donker." } },
+  { who:"🐉", item:"💎", biome:"cave",
+    name:   { bg:"Дракон", nl:"Draak" },
+    wants:  { bg:"кристали", nl:"kristallen" },
+    letter: { bg:"Д", nl:"D" },
+    fact:   { bg:"Събира лъскави камъни в пещерата.",
+              nl:"Verzamelt glimmende stenen in de grot." } },
+  { who:"🐺", item:"🦴", biome:"night",
+    name:   { bg:"Вълчо", nl:"Wolf" },
+    wants:  { bg:"кокали", nl:"botjes" },
+    letter: { bg:"В", nl:"W" },
+    fact:   { bg:"Вие, за да каже на другите къде е.",
+              nl:"Huilt om te zeggen waar hij is." } },
+  { who:"🕷️", item:"🕸️", biome:"night",
+    name:   { bg:"Паяк", nl:"Spin" },
+    wants:  { bg:"паяжини", nl:"webben" },
+    letter: { bg:"П", nl:"S" },
+    fact:   { bg:"Плете нова мрежа всяка сутрин.",
+              nl:"Weeft elke ochtend een nieuw web." } },
+  { who:"🐧", item:"🧊", biome:"winter",
+    name:   { bg:"Пингвин", nl:"Pinguïn" },
+    wants:  { bg:"ледчета", nl:"ijsblokjes" },
+    letter: { bg:"П", nl:"P" },
+    fact:   { bg:"Пързаля се по корем по-бързо, отколкото ходи.",
+              nl:"Glijdt op zijn buik sneller dan hij loopt." } },
+  { who:"⛄", item:"❄️", biome:"winter",
+    name:   { bg:"Снежко", nl:"Sneeuwpop" },
+    wants:  { bg:"снежинки", nl:"sneeuwvlokken" },
+    letter: { bg:"С", nl:"S" },
+    fact:   { bg:"Обича студа и се крие от слънцето.",
+              nl:"Houdt van kou en verstopt zich voor de zon." } },
+  { who:"🦌", item:"🎁", biome:"winter",
+    name:   { bg:"Елен", nl:"Hert" },
+    wants:  { bg:"подаръци", nl:"cadeaus" },
+    letter: { bg:"Е", nl:"H" },
+    fact:   { bg:"Сменя рогата си всяка година.",
+              nl:"Wisselt elk jaar van gewei." } },
+  { who:"🐢", item:"🍀", biome:"beach",
+    name:   { bg:"Костенурка", nl:"Schildpad" },
+    wants:  { bg:"детелини", nl:"klavertjes" },
+    letter: { bg:"К", nl:"S" },
+    fact:   { bg:"Носи дома си на гърба.",
+              nl:"Draagt haar huis op haar rug." } },
+  { who:"🦜", item:"🥜", biome:"beach",
+    name:   { bg:"Папагал", nl:"Papegaai" },
+    wants:  { bg:"фъстъци", nl:"pinda's" },
+    letter: { bg:"П", nl:"P" },
+    fact:   { bg:"Повтаря каквото чуе.",
+              nl:"Herhaalt wat hij hoort." } },
+  { who:"🦫", item:"🪵", biome:"day",
+    name:   { bg:"Бобър", nl:"Bever" },
+    wants:  { bg:"клечки", nl:"stokjes" },
+    letter: { bg:"Б", nl:"B" },
+    fact:   { bg:"Строи мостове от клечки.",
+              nl:"Bouwt bruggen van stokjes." } },
+  { who:"🐨", item:"🌿", biome:"day",
+    name:   { bg:"Коала", nl:"Koala" },
+    wants:  { bg:"стръкчета", nl:"kruiden" },
+    letter: { bg:"К", nl:"K" },
+    fact:   { bg:"Спи по двайсет часа на ден.",
+              nl:"Slaapt wel twintig uur per dag." } },
+  { who:"🐼", item:"🎋", biome:"blossom",
+    name:   { bg:"Панда", nl:"Panda" },
+    wants:  { bg:"бамбук", nl:"bamboe" },
+    letter: { bg:"П", nl:"P" },
+    fact:   { bg:"Яде бамбук по цял ден.",
+              nl:"Eet de hele dag bamboe." } },
+  { who:"🐣", item:"🌾", biome:"meadow",
+    name:   { bg:"Пиленце", nl:"Kuiken" },
+    wants:  { bg:"класчета", nl:"korenaren" },
+    letter: { bg:"П", nl:"K" },
+    fact:   { bg:"Тъкмо се е излюпило от яйце.",
+              nl:"Is net uit het ei gekomen." } },
+  { who:"🦀", item:"🐚", biome:"beach",
+    name:   { bg:"Рак", nl:"Krab" },
+    wants:  { bg:"мидички", nl:"schelpen" },
+    letter: { bg:"Р", nl:"K" },
+    fact:   { bg:"Върви настрани, не напред.",
+              nl:"Loopt opzij, niet vooruit." } },
+  { who:"🐬", item:"🎈", biome:"beach",
+    name:   { bg:"Делфин", nl:"Dolfijn" },
+    wants:  { bg:"балони", nl:"ballonnen" },
+    letter: { bg:"Д", nl:"D" },
+    fact:   { bg:"Спи с едно отворено око.",
+              nl:"Slaapt met één oog open." } },
+  { who:"🦭", item:"🍦", biome:"winter",
+    name:   { bg:"Тюленче", nl:"Zeehond" },
+    wants:  { bg:"сладоледи", nl:"ijsjes" },
+    letter: { bg:"Т", nl:"Z" },
+    fact:   { bg:"Държи дъха си много дълго.",
+              nl:"Houdt zijn adem heel lang in." } },
+  { who:"🐭", item:"🧀", biome:"cave",
+    name:   { bg:"Мишле", nl:"Muis" },
+    wants:  { bg:"парченца сирене", nl:"kaasjes" },
+    letter: { bg:"М", nl:"M" },
+    fact:   { bg:"Мустачките му мерят дупките.",
+              nl:"Zijn snorharen meten de gaatjes." } },
+  { who:"🐛", item:"🍇", biome:"blossom",
+    name:   { bg:"Гъсеница", nl:"Rups" },
+    wants:  { bg:"гроздове", nl:"druiven" },
+    letter: { bg:"Г", nl:"R" },
+    fact:   { bg:"Един ден ще стане пеперуда.",
+              nl:"Wordt op een dag een vlinder." } },
+  { who:"🦄", item:"🌈", biome:"dusk",
+    name:   { bg:"Еднорог", nl:"Eenhoorn" },
+    wants:  { bg:"дъги", nl:"regenbogen" },
+    letter: { bg:"Е", nl:"E" },
+    fact:   { bg:"Появява се, щом изгрее дъга.",
+              nl:"Verschijnt zodra er een regenboog is." } },
+  { who:"🧚", item:"🔮", biome:"cave",
+    name:   { bg:"Фея", nl:"Fee" },
+    wants:  { bg:"вълшебни кълба", nl:"toverbollen" },
+    letter: { bg:"Ф", nl:"F" },
+    fact:   { bg:"Свети в тъмното като светулка.",
+              nl:"Licht op in het donker als een glimworm." } },
 ];
+
+
+/* Старото име остава: двигателят на гората чете поръчките оттук. */
+const FOREST_QUESTS = FOREST_FRIENDS;
 
 /* ==== src/games/forest/forest.js ==== */
 const MODE_FOREST = {
@@ -3690,6 +3902,9 @@ const MODE_FOREST = {
         gateOut = true;
         items.push({ kind:"gate", x: camX + W * 1.25, hgt:0.34, taken:false, bob:0 });
         Sfx.star();
+        // Поръчката е изпълнена — приятелят и мястото влизат в колекцията.
+        discover("friends", String(FOREST_FRIENDS.indexOf(Q)));
+        discover("biomes", lvl.theme || "day");
       }
     }
 
@@ -4928,6 +5143,7 @@ Screens.home = function(){
 
     const row = h("div", { class:"home-row" },
       navBtn("🔤", t("letters"), () => Router.go("letters")),
+      navBtn("🦊", t("friends"), () => Router.go("friends")),
       navBtn("⭐", t("stars"), () => Router.go("stars")),
       navBtn("⚙️", t("settings"), () => Router.go("parents"))
     );
@@ -5176,6 +5392,69 @@ Screens.write = function(params){
     screen.appendChild(body);
     screen._onMounted = () => tracer.layout();
     screen._cleanup = () => tracer.destroy();
+    return screen;
+};
+
+/* ==== src/screens/friends.js ==== */
+Screens.friends = function(){
+    const p = State.progress;
+    const lang = p.language;
+    const found = (p.discoveries && p.discoveries.friends) || {};
+    const foundBiomes = (p.discoveries && p.discoveries.biomes) || {};
+
+    const screen = h("section", { class:"screen" });
+    screen.appendChild(h("div", { class:"page-title" },
+      backButton(() => Router.go("home")),
+      h("h1", null, t("friendsTitle"))
+    ));
+
+    const body = h("div", { class:"scroll-area" });
+
+    /* Брояч на открития. Показва какво е видяло детето, не колко му липсва. */
+    const n = Object.keys(found).length;
+    body.appendChild(h("div", { class:"discovery-row" },
+      h("span", { class:"disc" }, "🦊 " + n + " / " + FOREST_FRIENDS.length),
+      h("span", { class:"disc" }, "🗺️ " + Object.keys(foundBiomes).length + " / " + FOREST_BIOME_COUNT),
+      h("span", { class:"disc" }, "⭐ " + p.totalStars)
+    ));
+
+    const grid = h("div", { class:"friend-grid" });
+    FOREST_FRIENDS.forEach((f, i) => {
+      const known = !!found[String(i)];
+      const card = h("button", { class:"friend-card" + (known ? "" : " locked"), type:"button",
+                                 "aria-label": known ? f.name[lang] : t("friendUnknown") });
+      card.appendChild(h("span", { class:"friend-face" }, known ? f.who : "❓"));
+      card.appendChild(h("span", { class:"friend-name" }, known ? f.name[lang] : "?"));
+      if(known){
+        card.addEventListener("click", () => { Sfx.tap(); showFriend(f); });
+      } else {
+        // Неоткритият приятел не е заключен, а още непознат — казваме къде живее.
+        card.addEventListener("click", () => { Sfx.tap(); Speech.speak(t("friendUnknown")); });
+      }
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
+    screen.appendChild(body);
+
+    function showFriend(f){
+      const box = h("div", { class:"modal-card friend-detail" },
+        h("div", { class:"friend-face big" }, f.who),
+        h("h2", null, f.name[lang]),
+        h("p", { class:"friend-line" }, t("friendLives") + " " + t("biome_" + f.biome) + "."),
+        h("p", { class:"friend-line" }, t("friendLikes") + " " + f.wants[lang] + "."),
+        h("p", { class:"friend-line" }, t("friendLetter") + " " + f.letter[lang] + "."),
+        h("p", { class:"friend-fact" }, f.fact[lang])
+      );
+      const close = h("button", { class:"btn btn-primary", type:"button" }, t("close"));
+      box.appendChild(close);
+      const back = h("div", { class:"overlay", role:"dialog", "aria-modal":"true",
+                              "aria-label": f.name[lang] }, box);
+      close.addEventListener("click", () => { Sfx.tap(); back.remove(); });
+      back.addEventListener("click", (e) => { if(e.target === back) back.remove(); });
+      screen.appendChild(back);
+      Speech.speak(f.name[lang] + ". " + f.fact[lang]);
+    }
+
     return screen;
 };
 

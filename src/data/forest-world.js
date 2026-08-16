@@ -33,38 +33,7 @@ const FOREST_THEMES = {
             stars:false, rock:true }
 };
 
-/* Всяко ниво е малка история: горски приятел има нужда от нещо и детето
-   му го събира по пътя. Буквите висят наоколо като допълнение — носят
-   бонус звезди, но портата се отваря от мисията. */
-const FOREST_QUESTS = [
-  { who:"🐿️", item:"🌰", nl:"eikels",     bg:"жълъди" },
-  { who:"🐦", item:"🥚", nl:"eieren",     bg:"яйца" },
-  { who:"🐝", item:"🌸", nl:"bloemen",    bg:"цветя" },
-  { who:"🦔", item:"🍎", nl:"appels",     bg:"ябълки" },
-  { who:"🐸", item:"💧", nl:"druppels",   bg:"капки" },
-  { who:"🦋", item:"🍃", nl:"blaadjes",   bg:"листа" },
-  { who:"🐰", item:"🥕", nl:"wortels",    bg:"моркови" },
-  { who:"🐻", item:"🍯", nl:"honing",     bg:"мед" },
-  { who:"🦊", item:"🫐", nl:"bessen",     bg:"боровинки" },
-  { who:"🦉", item:"⭐", nl:"sterren",    bg:"звезди" },
-  { who:"🦇", item:"🍄", nl:"paddenstoelen", bg:"гъби" },
-  { who:"🐉", item:"💎", nl:"kristallen", bg:"кристали" },
-  { who:"🐺", item:"🦴", nl:"botjes",     bg:"кокали" },
-  { who:"🕷️", item:"🕸️", nl:"webben",     bg:"паяжини" },
-  { who:"🐧", item:"🧊", nl:"ijsblokjes",  bg:"ледчета" },
-  { who:"⛄", item:"❄️", nl:"sneeuwvlokken", bg:"снежинки" },
-  { who:"🦌", item:"🎁", nl:"cadeaus",    bg:"подаръци" },
-  { who:"🐢", item:"🍀", nl:"klavertjes", bg:"детелини" },
-  { who:"🦜", item:"🥜", nl:"pinda's",    bg:"фъстъци" },
-  { who:"🦫", item:"🪵", nl:"stokjes",    bg:"клечки" },
-  { who:"🐨", item:"🌿", nl:"kruiden",    bg:"стръкчета" },
-  { who:"🐼", item:"🎋", nl:"bamboe",     bg:"бамбук" },
-  { who:"🐣", item:"🌾", nl:"korenaren",  bg:"класчета" },
-  { who:"🦀", item:"🐚", nl:"schelpen",   bg:"мидички" },
-  { who:"🐬", item:"🎈", nl:"ballonnen",  bg:"балони" },
-  { who:"🦭", item:"🍦", nl:"ijsjes",     bg:"сладоледи" },
-  { who:"🐭", item:"🧀", nl:"kaasjes",    bg:"парченца сирене" },
-  { who:"🐛", item:"🍇", nl:"druiven",    bg:"гроздове" },
-  { who:"🦄", item:"🌈", nl:"regenbogen", bg:"дъги" },
-  { who:"🧚", item:"🔮", nl:"toverbollen", bg:"вълшебни кълба" }
-];
+/* Приятелите и поръчките им живеят в forest-friends.js. */
+
+/* Колко различни места има гората — ползва се от колекцията. */
+const FOREST_BIOME_COUNT = Object.keys(FOREST_THEMES).length;

@@ -74,7 +74,8 @@ function loadContext(files){
     "PHONICS", "phonicsPack", "firstSound", "lastSound", "soundSay",
     "buildPhonicsIndex", "pickPhonicsItem", "phonicsCue",
     "STORIES", "STORY_LEVELS", "pickStory", "storyPack",
-    "STROKES", "strokesFor", "hasStrokes", "createStrokeTracker", "strokeCheckpoints"
+    "STROKES", "strokesFor", "hasStrokes", "createStrokeTracker", "strokeCheckpoints",
+    "FOREST_FRIENDS", "FOREST_THEMES", "FOREST_BIOME_COUNT"
   ].join(", ") + " };", ctx, { filename: "buki-bundle" });
   return ctx.__api;
 }
@@ -95,6 +96,8 @@ const CORE = [
   "src/games/math/generators.js",
   "__mode-stubs__",
   "src/games/reading/reading.js",
+  "src/data/forest-world.js",
+  "src/data/forest-friends.js",
   "src/games/writing/strokes.js",
   "src/data/strokes-latin.js",
   "src/data/strokes-cyrillic.js",
@@ -591,6 +594,80 @@ group("Писане — проверката на движението");
   });
   ok("всеки щрих на всяка буква може да се завърши", failed.length === 0,
      failed.slice(0, 4).join(" | "));
+})();
+
+/* ====================================================================
+ * Дупките в гората. Скокът е с постоянна гравитация, значи дължината
+ * му се смята точно — и нито едно ниво не бива да ражда дупка, която е
+ * по-широка. Иначе детето засяда завинаги.
+ * ================================================================== */
+group("Гората — прескачаеми ли са дупките");
+
+(function(){
+  // числата са същите като в forest.js
+  const GRAV = 2.9, JUMP = 1.32, RUN_BASE = 0.27, PIT_SHARE = 0.55, PIT_OF_JUMP = 0.62;
+  const W = 980, CH = W * 0.52;
+  const airTime = 2 * JUMP / GRAV;
+
+  const src = fs.readFileSync(path.join(ROOT, "src/data/levels.js"), "utf8");
+  const speeds = [...src.matchAll(/speed:([\d.]+)/g)].map(m => parseFloat(m[1]));
+  ok("всяко ниво има зададена скорост", speeds.length === 30, String(speeds.length));
+
+  let worst = Infinity, worstLevel = 0;
+  speeds.forEach((sp, i) => {
+    const jump = RUN_BASE * sp * W * airTime;         // колко далеч стига един скок
+    const pit = Math.min(CH * PIT_SHARE, jump * PIT_OF_JUMP);
+    const margin = jump / pit;
+    if(margin < worst){ worst = margin; worstLevel = i + 1; }
+  });
+  ok("най-тясната дупка пак се прескача с margin над 1.2",
+     worst > 1.2, "ниво " + worstLevel + ": ×" + worst.toFixed(2));
+
+  // контролна сметка: ако дупката беше по-широка от скока, това трябва да падне
+  const jump1 = RUN_BASE * speeds[0] * W * airTime;
+  ok("проверката би хванала непрескачаема дупка",
+     jump1 / (jump1 * 1.4) < 1.2, (jump1 / (jump1 * 1.4)).toFixed(2));
+})();
+
+/* ==================================================================== */
+group("Гората — приятели и места");
+
+(function(){
+  const bad = [];
+  const seenWho = new Set(), seenItem = new Set(), seenName = { bg:new Set(), nl:new Set() };
+  api.FOREST_FRIENDS.forEach((f, i) => {
+    const w = "приятел " + (i + 1);
+    if(!f.who) bad.push(w + ": без емоджи");
+    if(seenWho.has(f.who)) bad.push(w + ": повторено емоджи " + f.who);
+    seenWho.add(f.who);
+    if(!f.item) bad.push(w + ": без предмет");
+    if(seenItem.has(f.item)) bad.push(w + ": повторен предмет " + f.item);
+    seenItem.add(f.item);
+    if(!api.FOREST_THEMES[f.biome]) bad.push(w + ": непознато място " + f.biome);
+    ["bg", "nl"].forEach(l => {
+      if(!f.name || !f.name[l]) return bad.push(w + ": липсва име на " + l);
+      if(seenName[l].has(f.name[l])) bad.push(w + ": повторено име " + f.name[l]);
+      seenName[l].add(f.name[l]);
+      if(!f.wants || !f.wants[l]) bad.push(w + ": липсва какво иска на " + l);
+      if(!f.fact || !f.fact[l]) bad.push(w + ": липсва факт на " + l);
+      if(!f.letter || !f.letter[l]) return bad.push(w + ": липсва буква на " + l);
+      const first = f.name[l].toUpperCase().charAt(0);
+      if(f.letter[l] !== first)
+        bad.push(w + ": буквата " + f.letter[l] + " не е първата на " + f.name[l]);
+    });
+  });
+  ok(api.FOREST_FRIENDS.length + " приятели без нито един проблем", bad.length === 0,
+     bad.slice(0, 4).join(" | "));
+  ok("всичките 30 приятеля са налице", api.FOREST_FRIENDS.length === 30);
+  ok("местата се броят правилно", api.FOREST_BIOME_COUNT === Object.keys(api.FOREST_THEMES).length);
+
+  // всяко ниво трябва да сочи към съществуващ приятел
+  const levels = fs.readFileSync(path.join(ROOT, "src/data/levels.js"), "utf8");
+  const quests = [...levels.matchAll(/quest:(\d+)/g)].map(m => +m[1]);
+  ok("всяко ниво сочи към съществуващ приятел",
+     quests.every(q => q >= 0 && q < api.FOREST_FRIENDS.length), quests.join(","));
+  ok("нито един приятел не се повтаря между нивата",
+     new Set(quests).size === quests.length, String(quests.length));
 })();
 
 /* ==================================================================== */

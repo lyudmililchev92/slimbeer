@@ -705,6 +705,42 @@ h1,h2,h3,p{margin:0}
 }
 .stroke-dot.on{ background:var(--c-primary); color:#FFF }
 
+/* --- колекция приятели --------------------------------------------- */
+.discovery-row{
+  display:flex; gap:clamp(10px,2.5vmin,22px); justify-content:center; flex-wrap:wrap;
+  margin-bottom:clamp(10px,2vmin,18px)
+}
+.discovery-row .disc{
+  background:#FFF; border-radius:999px; padding:.4em 1em;
+  font-size:var(--fs-small,15px); font-weight:800; color:var(--c-ink-soft);
+  box-shadow:0 2px 8px rgba(42,42,69,.07)
+}
+.friend-grid{
+  display:grid; gap:clamp(8px,1.8vmin,14px);
+  grid-template-columns:repeat(auto-fill, minmax(clamp(84px,15vmin,120px), 1fr))
+}
+.friend-card{
+  display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
+  min-height:var(--touch,64px); padding:clamp(8px,1.6vmin,14px) 4px; border:none;
+  border-radius:var(--r-md,18px); background:#FFF;
+  box-shadow:0 3px 12px rgba(42,42,69,.08)
+}
+.friend-card.locked{ background:#F1F0F8; box-shadow:none }
+.friend-face{ font-size:clamp(26px,5.5vmin,44px); line-height:1 }
+.friend-face.big{ font-size:clamp(48px,11vmin,86px) }
+.friend-card.locked .friend-face{ opacity:.42 }
+.friend-name{
+  font-size:var(--fs-small,13px); font-weight:800; color:var(--c-ink-soft);
+  text-align:center; line-height:1.15
+}
+.friend-detail{ text-align:center; display:flex; flex-direction:column; gap:8px; align-items:center }
+.friend-detail h2{ margin:0; color:var(--c-primary); font-size:clamp(20px,4vmin,30px) }
+.friend-line{ margin:0; font-size:var(--fs-body,17px); font-weight:700; color:var(--c-ink) }
+.friend-fact{
+  margin:6px 0 2px; font-size:var(--fs-small,15px); font-weight:600;
+  color:var(--c-ink-soft); max-width:26em; line-height:1.45
+}
+
    Адаптивност
    ========================================================================= */
 /* таблет/десктоп landscape → картинка вляво, игра вдясно */
