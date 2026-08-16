@@ -22,7 +22,11 @@ self.addEventListener("install", (e) => {
          max-age=600 и браузърът ги връщаше от паметта си, без да пита
          сървъра. Кешът се сменяше, съдържанието — не. */
       .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" }))))
-      .catch(() => {})          // липсващ файл не бива да чупи инсталацията
+      .catch((err) => {           // липсващ файл не бива да чупи инсталацията,
+        // но мълчаливото падане скри истински проблем — затова се съобщава
+        self.clients.matchAll({ includeUncontrolled: true }).then((cs) =>
+          cs.forEach((c) => c.postMessage({ type: "cache-failed", message: String(err) })));
+      })
       .then(() => self.skipWaiting())
   );
 });

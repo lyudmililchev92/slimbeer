@@ -12,7 +12,7 @@
    на файловете). Смени ли се, браузърът инсталира нов worker, изхвърля
    стария кеш и страницата се презарежда сама — иначе детето щеше да вижда
    вчерашната версия до следващото отваряне. */
-const CACHE = "buki-a9cb0313f8";
+const CACHE = "buki-9988781c3b";
 const SHELL = ["./", "./index.html", "./styles.css", "./app.js"];
 
 self.addEventListener("install", (e) => {
@@ -23,7 +23,11 @@ self.addEventListener("install", (e) => {
          max-age=600 и браузърът ги връщаше от паметта си, без да пита
          сървъра. Кешът се сменяше, съдържанието — не. */
       .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" }))))
-      .catch(() => {})          // липсващ файл не бива да чупи инсталацията
+      .catch((err) => {           // липсващ файл не бива да чупи инсталацията,
+        // но мълчаливото падане скри истински проблем — затова се съобщава
+        self.clients.matchAll({ includeUncontrolled: true }).then((cs) =>
+          cs.forEach((c) => c.postMessage({ type: "cache-failed", message: String(err) })));
+      })
       .then(() => self.skipWaiting())
   );
 });
