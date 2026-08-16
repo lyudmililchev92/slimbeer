@@ -650,7 +650,10 @@ const LANGS = {
       trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT", trackForest:"LETTERBOS",
       trackPhonics:"KLANKEN", trackStories:"VERHALEN",
       writeFree:"Zelf", writeGuided:"Stap voor stap",
-      friends:"Vrienden", friendsTitle:"Mijn vrienden",
+      friends:"Vrienden", friendsTitle:"Mijn vrienden", trackQuick:"SPELLETJES",
+      promptMemory:"Zoek de paren.", promptSort:"Waar hoort het bij?",
+      promptOddOne:"Welke hoort er niet bij?", memoryCard:"Kaart",
+      hintSortHere:"Deze hoort in dit bakje.", hintOddGroup:"De andere zijn",
       promptShape:"Welke vorm is dit?", promptPattern:"Wat komt hierna?",
       promptMatch:"Welke groep hoort bij dit getal?", promptBuild:"Hoe maak je",
       makes:"is", hintLookAgain:"Kijk nog eens goed.",
@@ -752,7 +755,10 @@ const LANGS = {
       trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ", trackForest:"В ГОРАТА",
       trackPhonics:"ЗВУКОВЕ", trackStories:"РАЗКАЗЧЕТА",
       writeFree:"Сам", writeGuided:"Стъпка по стъпка",
-      friends:"Приятели", friendsTitle:"Моите приятели",
+      friends:"Приятели", friendsTitle:"Моите приятели", trackQuick:"ИГРИЧКИ",
+      promptMemory:"Намери двойките.", promptSort:"Къде му е мястото?",
+      promptOddOne:"Кое не е на място?", memoryCard:"Картичка",
+      hintSortHere:"Това отива в тази кутия.", hintOddGroup:"Другите са",
       promptShape:"Коя форма е това?", promptPattern:"Какво следва?",
       promptMatch:"Коя група е това число?", promptBuild:"Как се прави",
       makes:"прави", hintLookAgain:"Погледни пак внимателно.",
@@ -906,7 +912,8 @@ function defaultTrackProgress(){
 function defaultLangProgress(){
   return { words: defaultTrackProgress(), math: defaultTrackProgress(),
            catch: defaultTrackProgress(), forest: defaultTrackProgress(),
-           phonics: defaultTrackProgress(), stories: defaultTrackProgress() };
+           phonics: defaultTrackProgress(), stories: defaultTrackProgress(),
+           quick: defaultTrackProgress() };
 }
 
 /* Прогресът по думи и нива е отделен за всеки език — ученето на
@@ -928,7 +935,7 @@ function defaultProgress(){
   };
 }
 
-const TRACK_IDS = ["words", "math", "catch", "forest", "phonics", "stories"];
+const TRACK_IDS = ["words", "math", "catch", "forest", "phonics", "stories", "quick"];
 
 const Store = {
   load(){
@@ -1234,6 +1241,11 @@ function skillsForRound(item, modeId, lang){
   if(item.sentences){                             // разказче
     ids.push("reading." + lang + ".comprehension");
     ids.push("story." + lang + ".level." + item.level);
+    return ids;
+  }
+
+  if(item.kind === "quick"){                      // бърза игра
+    ids.push("quick." + lang + "." + item.mode);
     return ids;
   }
 
@@ -3412,6 +3424,429 @@ const MODE_MAKE = {
   }
 };
 
+/* ==== src/games/quick/quick.js ==== */
+/* =========================================================================
+ * БЪРЗИ ИГРИ
+ * -------------------------------------------------------------------------
+ * Три кратки игри, които ползват вече наличното съдържание: памет,
+ * сортиране по категория и „кое не е на място“.
+ *
+ * Всичките са без таймер и без край на играта. Сгрешеното се връща
+ * обратно и детето опитва пак.
+ *
+ * Категориите се вземат от речника, но не всяка е ясна за дете на пет.
+ * Затова тук стои изричен списък — по-добре шест разбираеми групи,
+ * отколкото двайсет и седем спорни.
+ * ========================================================================= */
+
+const SORT_GROUPS = ["animals", "food", "vehicles", "clothes", "nature", "home"];
+
+const QUICK_LEVELS = [
+  { id:1,  modes:["memory"],           pairs:3, wordsToPass:3 },
+  { id:2,  modes:["sort"],             groups:2, items:4, wordsToPass:3 },
+  { id:3,  modes:["odd"],              wordsToPass:4 },
+  { id:4,  modes:["memory"],           pairs:4, wordsToPass:3 },
+  { id:5,  modes:["sort"],             groups:3, items:5, wordsToPass:3 },
+  { id:6,  modes:["memory","odd"],     pairs:4, wordsToPass:4 },
+  { id:7,  modes:["memory"],           pairs:6, wordsToPass:3, letters:true },
+  { id:8,  modes:["sort","odd"],       groups:3, items:6, wordsToPass:4 },
+  { id:9,  modes:["memory"],           pairs:6, wordsToPass:3 },
+  { id:10, modes:["memory","sort","odd"], pairs:6, groups:3, items:6, wordsToPass:5 }
+];
+
+function quickPool(){
+  return WORDS.filter(hasPicture);
+}
+
+function pickQuickItem(level){
+  const kind = rand(level.modes);
+  const pool = quickPool();
+  if(pool.length < 8) return null;
+
+  if(kind === "memory"){
+    const n = level.pairs || 4;
+    const picked = shuffle(pool).slice(0, n);
+    if(picked.length < n) return null;
+    return { kind:"quick", mode:"memory", words: picked, letters: !!level.letters };
+  }
+
+  if(kind === "sort"){
+    const cats = shuffle(SORT_GROUPS.filter(c => pool.filter(w => w.category === c).length >= 3))
+      .slice(0, level.groups || 2);
+    if(cats.length < 2) return null;
+    const items = [];
+    const perCat = Math.max(2, Math.ceil((level.items || 4) / cats.length));
+    cats.forEach(c => {
+      shuffle(pool.filter(w => w.category === c)).slice(0, perCat).forEach(w => items.push(w));
+    });
+    if(items.length < cats.length * 2) return null;
+    return { kind:"quick", mode:"sort", cats, items: shuffle(items) };
+  }
+
+  // odd: три от една категория и едно от друга
+  const cats = shuffle(SORT_GROUPS.filter(c => pool.filter(w => w.category === c).length >= 3));
+  if(cats.length < 2) return null;
+  const main = cats[0], other = cats[1];
+  const same = shuffle(pool.filter(w => w.category === main)).slice(0, 3);
+  const odd = rand(pool.filter(w => w.category === other));
+  if(same.length < 3 || !odd) return null;
+  return { kind:"quick", mode:"odd", cat: main, word: odd,
+           options: shuffle(same.concat([odd])) };
+}
+
+/* ---------------------------------------------------------------------
+ * Памет: обръщат се две картички и се търси двойка.
+ * Двойката може да е картинка↔дума или картинка↔първа буква.
+ * ------------------------------------------------------------------- */
+const MODE_MEMORY = {
+  id:"memory", showsPicture:false, fullArea:true,
+  supports(){ return true; },
+  mount(root, host){
+    const it = host.item;
+    const cards = [];
+    it.words.forEach((w, i) => {
+      cards.push({ id:i, face:"art", word:w });
+      cards.push({ id:i, face: it.letters ? "letter" : "text", word:w });
+    });
+    const deck = shuffle(cards);
+    let open = [], found = 0, mistakes = 0, busy = false;
+
+    root.appendChild(h("p", { class:"prompt" }, t("promptMemory")));
+    const grid = h("div", { class:"memory-grid", style:{ "--cols": String(Math.min(4, Math.ceil(deck.length / 3))) } });
+
+    deck.forEach((c) => {
+      const el = h("button", { class:"memory-card", type:"button", "aria-label": t("memoryCard") });
+      const back = h("span", { class:"card-back" }, "❓");
+      const front = h("span", { class:"card-front" });
+      if(c.face === "art") front.appendChild(renderArt(c.word));
+      else front.appendChild(h("span", { class:"card-text" },
+                               c.face === "letter" ? c.word.word.charAt(0) : c.word.word));
+      el.append(back, front);
+      c.el = el;
+
+      el.addEventListener("click", () => {
+        if(busy || el.classList.contains("open") || el.classList.contains("done")) return;
+        el.classList.add("open");
+        Sfx.tap();
+        open.push(c);
+        if(open.length < 2) return;
+        busy = true;
+        const [a, b] = open;
+        if(a.id === b.id && a.face !== b.face){
+          setTimeout(() => {
+            a.el.classList.add("done"); b.el.classList.add("done");
+            Sfx.place();
+            Speech.speak(a.word.display);
+            found++;
+            open = []; busy = false;
+            if(found >= it.words.length) setTimeout(() => host.correct(mistakes), 500);
+          }, 320);
+        } else {
+          mistakes++;
+          host.mistake();
+          setTimeout(() => {
+            a.el.classList.remove("open"); b.el.classList.remove("open");
+            open = []; busy = false;
+          }, 800);
+        }
+      });
+      grid.appendChild(el);
+    });
+    root.appendChild(grid);
+
+    return {
+      maxHints: 1,
+      hint(){
+        // показваме всички за миг — без наказание, това е играта на паметта
+        deck.forEach(c => c.el.classList.add("open"));
+        setTimeout(() => deck.forEach(c => {
+          if(!c.el.classList.contains("done")) c.el.classList.remove("open");
+        }), 1100);
+        return t("hintLookAgain");
+      },
+      destroy(){}
+    };
+  }
+};
+
+/* ---------------------------------------------------------------------
+ * Сортиране: всяко нещо отива в своята група. Докосване, не влачене —
+ * влаченето между кутии е трудно за малка ръка.
+ * ------------------------------------------------------------------- */
+const MODE_SORT = {
+  id:"sort", showsPicture:false, fullArea:true,
+  supports(){ return true; },
+  mount(root, host){
+    const it = host.item;
+    let left = it.items.slice(), mistakes = 0, chosen = null;
+
+    root.appendChild(h("p", { class:"prompt" }, t("promptSort")));
+
+    const tray = h("div", { class:"sort-tray" });
+    const bins = h("div", { class:"sort-bins" });
+
+    const binOf = {};
+    it.cats.forEach(c => {
+      const bin = h("button", { class:"sort-bin", type:"button",
+                                "aria-label": L().categories[c] || c },
+        h("span", { class:"bin-icon" }, CATEGORY_ICONS[c] || "📦"),
+        h("span", { class:"bin-name" }, L().categories[c] || c),
+        h("span", { class:"bin-items" }));
+      bin.addEventListener("click", () => place(c, bin));
+      binOf[c] = bin;
+      bins.appendChild(bin);
+    });
+
+    function paintTray(){
+      tray.innerHTML = "";
+      left.forEach((w, i) => {
+        const b = h("button", { class:"sort-item" + (chosen === w ? " on" : ""),
+                                type:"button", "aria-label": w.display });
+        b.appendChild(renderArt(w));
+        b.addEventListener("click", () => {
+          Sfx.tap();
+          chosen = (chosen === w) ? null : w;
+          Speech.speak(w.display);
+          paintTray();
+        });
+        tray.appendChild(b);
+      });
+    }
+
+    function place(cat, bin){
+      if(!chosen){ Sfx.tap(); return; }
+      if(chosen.category === cat){
+        const art = renderArt(chosen, "bin-pic");
+        bin.querySelector(".bin-items").appendChild(art);
+        left = left.filter(w => w !== chosen);
+        chosen = null;
+        Sfx.place();
+        paintTray();
+        if(!left.length) setTimeout(() => host.correct(mistakes), 450);
+      } else {
+        mistakes++;
+        Sfx.wrong();
+        shakeEl(bin);
+        host.mistake();
+      }
+    }
+
+    paintTray();
+    root.append(tray, bins);
+
+    return {
+      maxHints: 2,
+      hint(){
+        if(!left.length) return t("hintHereIs");
+        const w = chosen || left[0];
+        chosen = w; paintTray();
+        binOf[w.category].classList.add("hintful");
+        setTimeout(() => binOf[w.category].classList.remove("hintful"), 1400);
+        return t("hintSortHere");
+      },
+      destroy(){}
+    };
+  }
+};
+
+/* ---------------------------------------------------------------------
+ * Кое не е на място: три неща от една група и едно чуждо.
+ * ------------------------------------------------------------------- */
+const MODE_ODD = {
+  id:"odd", showsPicture:false,
+  supports(){ return true; },
+  mount(root, host){
+    const it = host.item;
+    let mistakes = 0, done = false;
+
+    root.appendChild(h("p", { class:"prompt" }, t("promptOddOne")));
+    const opts = h("div", { class:"options" });
+    it.options.forEach(w => {
+      const b = h("button", { class:"opt-pic", type:"button", "aria-label": w.display });
+      b.appendChild(renderArt(w));
+      b.addEventListener("click", () => {
+        if(done) return;
+        if(w.word === it.word.word){
+          done = true; b.classList.add("right"); Sfx.place();
+          Speech.speak(w.display);
+          setTimeout(() => host.correct(mistakes), 520);
+        } else { mistakes++; Sfx.wrong(); shakeEl(b); host.mistake(); }
+      });
+      opts.appendChild(b);
+    });
+    root.appendChild(opts);
+
+    return {
+      maxHints: 2,
+      hint(step){
+        if(step === 1){
+          Speech.speak(L().categories[it.cat] || it.cat);
+          return t("hintOddGroup") + " " + (L().categories[it.cat] || it.cat) + ".";
+        }
+        const right = Array.from(opts.children)
+          .find(b => b.getAttribute("aria-label") === it.word.display);
+        if(right) right.classList.add("right");
+        return t("hintHereIs");
+      },
+      destroy(){}
+    };
+  }
+};
+
+const QUICK_MODES = {};
+[MODE_MEMORY, MODE_SORT, MODE_ODD].forEach(m => { QUICK_MODES[m.id] = m; });
+
+/* Икони за кутиите при сортиране. */
+const CATEGORY_ICONS = {
+  animals:"🐾", food:"🍎", vehicles:"🚗", clothes:"👕", nature:"🌿", home:"🏠",
+  objects:"📦", school:"✏️", sport:"⚽", music:"🎵", places:"🏙️", body:"👤"
+};
+
+/* ==== src/games/letter-hunt/tasks.js ==== */
+/* =========================================================================
+ * ЛОВЪТ — какво точно се лови
+ * -------------------------------------------------------------------------
+ * Играта е една: Буки стои долу, нещо пада отгоре, детето го хваща.
+ * Различното е какво се лови и как разбира кое е вярното.
+ *
+ * Затова тук стои само задачата, а самата игра не знае нищо за букви,
+ * звукове или сметки. Задачата казва три неща:
+ *
+ *   targets      какво трябва да се хване, по ред
+ *   distractor() какво друго може да пада
+ *   head()       какво стои горе, за да се разбере какво се търси
+ *
+ * Няма таймер, животи и край на играта в нито един режим. Сгрешеното
+ * отскача, пропуснатото се връща.
+ * ========================================================================= */
+
+/** Помощник: три различни неща, едно от които е вярното. */
+function catchDistractors(pool, avoid){
+  const list = pool.filter(x => x !== avoid);
+  return list.length ? list : pool;
+}
+
+const CATCH_TASKS = {
+
+  /* 1. Сглоби думата — буква по буква. Това беше досегашната игра. */
+  word: {
+    supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 7; },
+    build(word){
+      const letters = word.word.split("");
+      const alphabet = L().alphabet;
+      return {
+        id: "word",
+        targets: letters,
+        showSlots: true,
+        distractor: () => alphabet[Math.floor(Math.random() * alphabet.length)],
+        head(box){ if(hasPicture(word)) box.appendChild(renderArt(word, "catch-pic")); }
+      };
+    }
+  },
+
+  /* 2. Хвани първата буква — показва се само картинката. */
+  first: {
+    supports(word){ return !word.audioOnly && hasPicture(word) && word.word.length >= 3; },
+    build(word){
+      const target = word.word.charAt(0);
+      const alphabet = catchDistractors(L().alphabet, target);
+      return {
+        id: "first",
+        targets: [target],
+        distractor: () => alphabet[Math.floor(Math.random() * alphabet.length)],
+        head(box){ box.appendChild(renderArt(word, "catch-pic")); }
+      };
+    }
+  },
+
+  /* 3. Хвани звука — чува се, не се вижда. */
+  sound: {
+    supports(word){
+      return !word.audioOnly && hasPicture(word) && Speech.supported && Speech.hasVoice();
+    },
+    build(word){
+      const lang = State.progress.language;
+      const target = firstSound(word, lang);
+      // ловим буква, затова целта трябва да е една буква, не двойка
+      const letter = target.length === 1 ? target : word.word.charAt(0);
+      const alphabet = catchDistractors(L().alphabet, letter);
+      return {
+        id: "sound",
+        targets: [letter],
+        say: () => Speech.speak(soundSay(target, lang), { rate: 0.75 }),
+        distractor: () => alphabet[Math.floor(Math.random() * alphabet.length)],
+        head(box){
+          const b = h("button", { class:"catch-listen", type:"button",
+                                  "aria-label": t("listenLabel") }, "🔊");
+          b.addEventListener("click", () => { Sfx.tap(); Speech.speak(soundSay(target, lang), { rate: 0.75 }); });
+          box.appendChild(b);
+        }
+      };
+    }
+  },
+
+  /* 4. Хвани сричката — началото е дадено, търси се продължението. */
+  syllable: {
+    supports(word){ return !word.audioOnly && hasPicture(word) && word.syllables.length === 2; },
+    build(word){
+      const target = word.syllables[1];
+      const others = WORDS.filter(w => w.syllables.length >= 2 && w.syllables[1] !== target)
+                          .map(w => w.syllables[1]);
+      return {
+        id: "syllable",
+        targets: [target],
+        wide: true,
+        prefix: word.syllables[0],
+        distractor: () => others.length ? others[Math.floor(Math.random() * others.length)] : "ЛА",
+        head(box){
+          box.appendChild(renderArt(word, "catch-pic"));
+          box.appendChild(h("span", { class:"catch-prefix" }, word.syllables[0] + " …"));
+        }
+      };
+    }
+  },
+
+  /* 5. Хвани числото — горе стоят предмети, лови се колко са. */
+  count: {
+    supports(){ return true; },
+    build(){
+      const n = 1 + Math.floor(Math.random() * 9);
+      const icon = rand(COUNT_ICONS);
+      return {
+        id: "count",
+        targets: [String(n)],
+        say: () => Speech.speak(numberWord(n)),
+        distractor: () => String(1 + Math.floor(Math.random() * 10)),
+        head(box){ box.appendChild(iconRow(icon, n, "group")); }
+      };
+    }
+  },
+
+  /* 6. Хвани отговора — горе стои сметка. */
+  sum: {
+    supports(){ return true; },
+    build(){
+      const a = 1 + Math.floor(Math.random() * 6);
+      const b = 1 + Math.floor(Math.random() * (10 - a));
+      return {
+        id: "sum",
+        targets: [String(a + b)],
+        say: () => Speech.speak(numberWord(a) + " " + t("plus") + " " + numberWord(b)),
+        distractor: () => String(1 + Math.floor(Math.random() * 15)),
+        head(box){ box.appendChild(h("span", { class:"catch-sum" }, a + " + " + b)); }
+      };
+    }
+  }
+};
+
+/** Избира вид лов за нивото и думата. Пада към сглобяване на дума. */
+function buildCatchTask(level, word){
+  const wanted = (level.hunt && level.hunt.length) ? level.hunt : ["word"];
+  const usable = wanted.filter(id => CATCH_TASKS[id] && CATCH_TASKS[id].supports(word));
+  const id = usable.length ? rand(usable) : "word";
+  return CATCH_TASKS[id].build(word);
+}
+
 /* ==== src/games/letter-hunt/catch.js ==== */
 /* =========================================================================
  * 8c. ЛОВ НА БУКВИТЕ — 2D игра с движение
@@ -3428,20 +3863,24 @@ const MODE_CATCH = {
 
   mount(root, host){
     const word = host.word;
-    const letters = word.word.split("");
+    /* Какво точно се лови решава задачата, не играта. Виж tasks.js. */
+    const task = buildCatchTask(getLevel(LP().currentLevel), word);
+    const letters = task.targets;
     let need = 0, mistakes = 0, running = true, raf = 0;
 
-    /* ---- горна лента: картинка и местата за буквите ---- */
+    /* ---- горна лента: задачата казва какво да стои горе ---- */
     const head = h("div", { class:"catch-head" });
-    if(word.art || word.emoji) head.appendChild(renderArt(word, "catch-pic"));
+    task.head(head);
     const slotsEl = h("div", { class:"catch-slots" });
     const slotEls = letters.map((ch, i) => {
-      const el = h("span", { class:"catch-slot" + (i === 0 ? " next" : "") }, "");
+      const el = h("span", { class:"catch-slot" + (i === 0 ? " next" : "") +
+                                    (task.wide ? " wide" : "") }, "");
       slotsEl.appendChild(el);
       return el;
     });
     head.appendChild(slotsEl);
     root.appendChild(head);
+    if(task.say) setTimeout(task.say, 420);
 
     const wrap = h("div", { class:"catch-wrap" });
     const canvas = h("canvas");
@@ -3465,7 +3904,6 @@ const MODE_CATCH = {
     const sparks = [];         // искри при хващане
     let spawnIn = 0;
 
-    const alphabet = L().alphabet;
     const speed = REDUCED_MOTION ? 0.10 : 0.155;   // част от височината в секунда (~6 сек. пресичане)
 
     function layout(){
@@ -3483,7 +3921,7 @@ const MODE_CATCH = {
       const hasNeeded = drops.some(d => d.ch === needed);
       let ch;
       if(!hasNeeded || Math.random() < 0.35) ch = needed;
-      else ch = alphabet[Math.floor(Math.random() * alphabet.length)];
+      else ch = task.distractor();
       drops.push({
         ch: ch,
         x: 0.08 + Math.random() * 0.84,
@@ -4861,13 +5299,20 @@ const FOREST_LEVELS = [
   { id:30, theme:"cave", quest:29, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:22, pits:0.35, speed:1.52, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.80, modes:["forest"] }
 ];
 
+/* Ловът не е една игра с шест нива, а един двигател с шест вида задачи.
+   `hunt` казва кои от тях излизат на нивото. Виж letter-hunt/tasks.js. */
 const CATCH_LEVELS = [
-  { id:1, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:4, modes:["catch"] },
-  { id:2, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"] },
-  { id:3, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, modes:["catch"] },
-  { id:4, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"] },
-  { id:5, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"] },
-  { id:6, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, modes:["catch"] }
+  { id:1,  minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:4, modes:["catch"], hunt:["word"] },
+  { id:2,  minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"], hunt:["word","first"] },
+  { id:3,  minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"], hunt:["first","count"] },
+  { id:4,  minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, modes:["catch"], hunt:["word","sound"] },
+  { id:5,  minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"], hunt:["syllable","first"] },
+  { id:6,  minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"], hunt:["word","count"] },
+  { id:7,  minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"], hunt:["sum"] },
+  { id:8,  minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"], hunt:["sound","syllable"] },
+  { id:9,  minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, modes:["catch"], hunt:["word","sum"] },
+  { id:10, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, modes:["catch"],
+    hunt:["word","first","sound","syllable","count","sum"] }
 ];
 
 /* ==== src/core/tracks.js ==== */
@@ -4905,6 +5350,15 @@ const TRACKS = {
     itemKey: (item) => item.word,
     speak: (item) => item.display,
     label: (item) => item.word
+  },
+  quick: {
+    id:"quick", icon:"\uD83C\uDFAE",
+    levels: () => QUICK_LEVELS,
+    pickItem: (level) => pickQuickItem(level),
+    pickMode: (level, item) => QUICK_MODES[item.mode] || MODE_ODD,
+    itemKey: (item) => item.mode + ":" + (item.word ? item.word.word : (item.words||item.items||[]).map(w=>w.word).join("")),
+    speak: (item) => item.word ? item.word.display : "",
+    label: (item) => item.word ? item.word.word : ""
   },
   stories: {
     id:"stories", icon:"\uD83D\uDCDA",
@@ -5357,7 +5811,8 @@ Screens.home = function(){
       trackCard("catch", "trackCatch", "🕹️", "t-catch"),
       trackCard("forest", "trackForest", "🌲", "t-forest"),
       trackCard("phonics", "trackPhonics", "👂", "t-phonics"),
-      trackCard("stories", "trackStories", "📚", "t-stories"));
+      trackCard("stories", "trackStories", "📚", "t-stories"),
+      trackCard("quick", "trackQuick", "🎮", "t-quick"));
     const playBtn = tracks.firstChild;
 
     const row = h("div", { class:"home-row" },

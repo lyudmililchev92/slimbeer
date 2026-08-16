@@ -75,7 +75,9 @@ function loadContext(files){
     "buildPhonicsIndex", "pickPhonicsItem", "phonicsCue",
     "STORIES", "STORY_LEVELS", "pickStory", "storyPack",
     "STROKES", "strokesFor", "hasStrokes", "createStrokeTracker", "strokeCheckpoints",
-    "FOREST_FRIENDS", "FOREST_THEMES", "FOREST_BIOME_COUNT"
+    "FOREST_FRIENDS", "FOREST_THEMES", "FOREST_BIOME_COUNT",
+    "CATCH_TASKS", "buildCatchTask", "CATCH_LEVELS", "Speech",
+    "QUICK_LEVELS", "pickQuickItem", "SORT_GROUPS"
   ].join(", ") + " };", ctx, { filename: "buki-bundle" });
   return ctx.__api;
 }
@@ -98,6 +100,7 @@ const CORE = [
   "src/games/reading/reading.js",
   "src/data/forest-world.js",
   "src/data/forest-friends.js",
+  "src/data/levels.js",
   "src/games/writing/strokes.js",
   "src/data/strokes-latin.js",
   "src/data/strokes-cyrillic.js",
@@ -105,6 +108,8 @@ const CORE = [
   "src/data/stories-bg.js",
   "src/data/stories-nl.js",
   "src/games/phonics/phonics.js",
+  "src/games/quick/quick.js",
+  "src/games/letter-hunt/tasks.js",
   "src/data/phonics-bg.js",
   "src/data/phonics-nl.js"
 ];
@@ -644,6 +649,112 @@ group("Гората — приятели и места");
      quests.every(q => q >= 0 && q < api.FOREST_FRIENDS.length), quests.join(","));
   ok("нито един приятел не се повтаря между нивата",
      new Set(quests).size === quests.length, String(quests.length));
+})();
+
+/* ==================================================================== */
+group("Лов на буквите — шестте вида");
+
+(function(){
+  api.State.progress = api.defaultProgress();
+  api.State.progress.language = "bg";
+  api.setWords(api.buildWords("bg", () => true));
+  api.buildPhonicsIndex("bg");
+
+  // Ловът на звук иска глас. В Node няма синтезатор, затова го подпираме —
+  // иначе видът никога не се ражда и проверката би била невярно спокойна.
+  const realSupported = api.Speech.supported, realVoice = api.Speech.hasVoice;
+  api.Speech.supported = true;
+  api.Speech.hasVoice = () => true;
+
+  const bad = [], seen = {};
+  for(const lvl of api.CATCH_LEVELS){
+    const pool = api.wordPool(lvl);
+    if(pool.length < 5){ bad.push("ниво " + lvl.id + ": празен басейн"); continue; }
+    for(let i = 0; i < 400; i++){
+      const w = pool[i % pool.length];
+      const task = api.buildCatchTask(lvl, w);
+      if(!task){ bad.push("ниво " + lvl.id + ": няма задача"); break; }
+      seen[task.id] = (seen[task.id] || 0) + 1;
+      if(lvl.hunt.indexOf(task.id) < 0 && task.id !== "word")
+        bad.push("ниво " + lvl.id + ": непоискан вид " + task.id);
+      if(!task.targets || !task.targets.length) bad.push("ниво " + lvl.id + "/" + task.id + ": няма какво да се лови");
+      task.targets.forEach(x => {
+        if(typeof x !== "string" || !x) bad.push("ниво " + lvl.id + "/" + task.id + ": целта не е надпис");
+      });
+      // разсейващото никога не бива да е случайно вярното
+      for(let k = 0; k < 40; k++){
+        const d = task.distractor();
+        if(typeof d !== "string" || !d) bad.push("ниво " + lvl.id + "/" + task.id + ": празно разсейващо");
+      }
+      if(typeof task.head !== "function") bad.push("ниво " + lvl.id + "/" + task.id + ": няма горна лента");
+    }
+  }
+  ok("задачите на лова са валидни на всичките " + api.CATCH_LEVELS.length + " нива",
+     bad.length === 0, [...new Set(bad)].slice(0, 3).join(" | "));
+  ok("всичките шест вида лов се раждат", Object.keys(seen).length === 6,
+     Object.keys(seen).sort().join(" "));
+  ok("ловът е пораснал на десет нива", api.CATCH_LEVELS.length === 10, String(api.CATCH_LEVELS.length));
+
+  // а без глас ловът на звук просто не се появява, вместо да е неиграем
+  api.Speech.hasVoice = () => false;
+  let soundWithoutVoice = 0;
+  const lvl4 = api.CATCH_LEVELS.find(l => l.hunt.indexOf("sound") >= 0);
+  const pool4 = api.wordPool(lvl4);
+  for(let i = 0; i < 200; i++)
+    if(api.buildCatchTask(lvl4, pool4[i % pool4.length]).id === "sound") soundWithoutVoice++;
+  ok("без глас ловът на звук не се предлага", soundWithoutVoice === 0, String(soundWithoutVoice));
+
+  api.Speech.supported = realSupported;
+  api.Speech.hasVoice = realVoice;
+})();
+
+/* ==================================================================== */
+group("Бързи игри");
+
+(function(){
+  api.State.progress = api.defaultProgress();
+  api.State.progress.language = "bg";
+  api.setWords(api.buildWords("bg", () => true));
+
+  const bad = [], seen = {};
+  for(const lvl of api.QUICK_LEVELS){
+    for(let i = 0; i < 200; i++){
+      const it = api.pickQuickItem(lvl);
+      if(!it){ bad.push("ниво " + lvl.id + ": няма задача"); break; }
+      seen[it.mode] = (seen[it.mode] || 0) + 1;
+      if(lvl.modes.indexOf(it.mode) < 0) bad.push("ниво " + lvl.id + ": непоискан вид " + it.mode);
+
+      if(it.mode === "memory"){
+        if(it.words.length !== (lvl.pairs || 4)) bad.push("ниво " + lvl.id + ": грешен брой двойки");
+        if(new Set(it.words.map(w => w.word)).size !== it.words.length)
+          bad.push("ниво " + lvl.id + ": повторена дума в паметта");
+        if(it.words.some(w => !w.emoji && !w.art)) bad.push("ниво " + lvl.id + ": картичка без картинка");
+      }
+      if(it.mode === "sort"){
+        if(it.cats.length < 2) bad.push("ниво " + lvl.id + ": под две кутии");
+        if(new Set(it.cats).size !== it.cats.length) bad.push("ниво " + lvl.id + ": повторена кутия");
+        it.items.forEach(w => {
+          if(it.cats.indexOf(w.category) < 0) bad.push("ниво " + lvl.id + ": нещо без своя кутия");
+        });
+        it.cats.forEach(c => {
+          if(!it.items.some(w => w.category === c)) bad.push("ниво " + lvl.id + ": празна кутия " + c);
+        });
+        if(new Set(it.items.map(w => w.word)).size !== it.items.length)
+          bad.push("ниво " + lvl.id + ": повторено нещо за сортиране");
+      }
+      if(it.mode === "odd"){
+        if(it.options.length !== 4) bad.push("ниво " + lvl.id + ": «не е на място» без четири неща");
+        const same = it.options.filter(w => w.category === it.cat).length;
+        if(same !== 3) bad.push("ниво " + lvl.id + ": няма точно три от една група");
+        if(it.word.category === it.cat) bad.push("ниво " + lvl.id + ": чуждото е от същата група");
+        if(it.options.indexOf(it.word) < 0) bad.push("ниво " + lvl.id + ": чуждото липсва сред възможностите");
+      }
+    }
+  }
+  ok("бързите игри са валидни на всичките " + api.QUICK_LEVELS.length + " нива",
+     bad.length === 0, [...new Set(bad)].slice(0, 3).join(" | "));
+  ok("и трите бързи игри се раждат", Object.keys(seen).length === 3, Object.keys(seen).sort().join(" "));
+  ok("групите за сортиране са само ясните", api.SORT_GROUPS.length <= 8, String(api.SORT_GROUPS.length));
 })();
 
 /* ==================================================================== */

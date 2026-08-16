@@ -33,6 +33,15 @@ const TRACKS = {
     speak: (item) => item.display,
     label: (item) => item.word
   },
+  quick: {
+    id:"quick", icon:"\uD83C\uDFAE",
+    levels: () => QUICK_LEVELS,
+    pickItem: (level) => pickQuickItem(level),
+    pickMode: (level, item) => QUICK_MODES[item.mode] || MODE_ODD,
+    itemKey: (item) => item.mode + ":" + (item.word ? item.word.word : (item.words||item.items||[]).map(w=>w.word).join("")),
+    speak: (item) => item.word ? item.word.display : "",
+    label: (item) => item.word ? item.word.word : ""
+  },
   stories: {
     id:"stories", icon:"\uD83D\uDCDA",
     levels: () => STORY_LEVELS,

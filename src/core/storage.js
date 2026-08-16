@@ -15,7 +15,8 @@ function defaultTrackProgress(){
 function defaultLangProgress(){
   return { words: defaultTrackProgress(), math: defaultTrackProgress(),
            catch: defaultTrackProgress(), forest: defaultTrackProgress(),
-           phonics: defaultTrackProgress(), stories: defaultTrackProgress() };
+           phonics: defaultTrackProgress(), stories: defaultTrackProgress(),
+           quick: defaultTrackProgress() };
 }
 
 /* Прогресът по думи и нива е отделен за всеки език — ученето на
@@ -37,7 +38,7 @@ function defaultProgress(){
   };
 }
 
-const TRACK_IDS = ["words", "math", "catch", "forest", "phonics", "stories"];
+const TRACK_IDS = ["words", "math", "catch", "forest", "phonics", "stories", "quick"];
 
 const Store = {
   load(){

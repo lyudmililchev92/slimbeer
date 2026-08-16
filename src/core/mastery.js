@@ -134,6 +134,11 @@ function skillsForRound(item, modeId, lang){
     return ids;
   }
 
+  if(item.kind === "quick"){                      // бърза игра
+    ids.push("quick." + lang + "." + item.mode);
+    return ids;
+  }
+
   if(item.kind === "phonics"){                    // задача по звукове
     if(item.sound) ids.push("sound." + lang + "." + item.sound);
     ids.push("phonics." + lang + "." + item.mode);

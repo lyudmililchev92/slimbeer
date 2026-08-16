@@ -13,20 +13,24 @@ const MODE_CATCH = {
 
   mount(root, host){
     const word = host.word;
-    const letters = word.word.split("");
+    /* Какво точно се лови решава задачата, не играта. Виж tasks.js. */
+    const task = buildCatchTask(getLevel(LP().currentLevel), word);
+    const letters = task.targets;
     let need = 0, mistakes = 0, running = true, raf = 0;
 
-    /* ---- горна лента: картинка и местата за буквите ---- */
+    /* ---- горна лента: задачата казва какво да стои горе ---- */
     const head = h("div", { class:"catch-head" });
-    if(word.art || word.emoji) head.appendChild(renderArt(word, "catch-pic"));
+    task.head(head);
     const slotsEl = h("div", { class:"catch-slots" });
     const slotEls = letters.map((ch, i) => {
-      const el = h("span", { class:"catch-slot" + (i === 0 ? " next" : "") }, "");
+      const el = h("span", { class:"catch-slot" + (i === 0 ? " next" : "") +
+                                    (task.wide ? " wide" : "") }, "");
       slotsEl.appendChild(el);
       return el;
     });
     head.appendChild(slotsEl);
     root.appendChild(head);
+    if(task.say) setTimeout(task.say, 420);
 
     const wrap = h("div", { class:"catch-wrap" });
     const canvas = h("canvas");
@@ -50,7 +54,6 @@ const MODE_CATCH = {
     const sparks = [];         // искри при хващане
     let spawnIn = 0;
 
-    const alphabet = L().alphabet;
     const speed = REDUCED_MOTION ? 0.10 : 0.155;   // част от височината в секунда (~6 сек. пресичане)
 
     function layout(){
@@ -68,7 +71,7 @@ const MODE_CATCH = {
       const hasNeeded = drops.some(d => d.ch === needed);
       let ch;
       if(!hasNeeded || Math.random() < 0.35) ch = needed;
-      else ch = alphabet[Math.floor(Math.random() * alphabet.length)];
+      else ch = task.distractor();
       drops.push({
         ch: ch,
         x: 0.08 + Math.random() * 0.84,

@@ -43,11 +43,18 @@ const FOREST_LEVELS = [
   { id:30, theme:"cave", quest:29, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:22, pits:0.35, speed:1.52, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.80, modes:["forest"] }
 ];
 
+/* Ловът не е една игра с шест нива, а един двигател с шест вида задачи.
+   `hunt` казва кои от тях излизат на нивото. Виж letter-hunt/tasks.js. */
 const CATCH_LEVELS = [
-  { id:1, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:4, modes:["catch"] },
-  { id:2, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"] },
-  { id:3, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, modes:["catch"] },
-  { id:4, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"] },
-  { id:5, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"] },
-  { id:6, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, modes:["catch"] }
+  { id:1,  minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:4, modes:["catch"], hunt:["word"] },
+  { id:2,  minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"], hunt:["word","first"] },
+  { id:3,  minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"], hunt:["first","count"] },
+  { id:4,  minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, modes:["catch"], hunt:["word","sound"] },
+  { id:5,  minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"], hunt:["syllable","first"] },
+  { id:6,  minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"], hunt:["word","count"] },
+  { id:7,  minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"], hunt:["sum"] },
+  { id:8,  minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"], hunt:["sound","syllable"] },
+  { id:9,  minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, modes:["catch"], hunt:["word","sum"] },
+  { id:10, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, modes:["catch"],
+    hunt:["word","first","sound","syllable","count","sum"] }
 ];
