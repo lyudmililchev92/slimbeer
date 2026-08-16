@@ -10,11 +10,14 @@
 const DEFAULT_LANG = "nl";
 
 /* Множители върху основната скорост на езика. Бавно е за най-малките. */
-const SPEECH_SPEEDS = { slow: 0.6, normal: 1, fast: 1.5 };
+/* Скоростите са ниски нарочно. Дете на четири не разчита дума, изговорена
+   с темпото на възрастен — то ѝ чува само края. Дори „бързо“ тук е
+   по-бавно от нормалния говор. */
+const SPEECH_SPEEDS = { slow: 0.45, normal: 0.75, fast: 1.1 };
 
 const LANGS = {
   nl: {
-    name: "Nederlands", flag: "\u{1F1F3}\u{1F1F1}", speech: "nl-NL", rate: 0.5,
+    name: "Nederlands", flag: "\u{1F1F3}\u{1F1F1}", speech: "nl-NL", rate: 0.45,
     alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
     letterSound: {
       A:"aa", B:"bee", C:"see", D:"dee", E:"ee", F:"ef", G:"gee", H:"haa", I:"ie",
@@ -130,7 +133,7 @@ const LANGS = {
   },
 
   bg: {
-    name: "Български", flag: "\u{1F1E7}\u{1F1EC}", speech: "bg-BG", rate: 0.62,
+    name: "Български", flag: "\u{1F1E7}\u{1F1EC}", speech: "bg-BG", rate: 0.52,
     alphabet: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ".split(""),
     letterSound: {
       "А":"а","Б":"бъ","В":"въ","Г":"гъ","Д":"дъ","Е":"е","Ж":"жъ","З":"зъ","И":"и","Й":"й",

@@ -84,6 +84,15 @@ function init(){
   if("serviceWorker" in navigator && location.protocol === "https:"){
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").catch(() => {});
+      /* Нов worker поема управлението само когато сглобяването е ново.
+         Тогава презареждаме веднъж, за да не играе детето вчерашната
+         версия. Пазим се от цикъл с флаг. */
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if(reloading) return;
+        reloading = true;
+        location.reload();
+      });
     });
   }
 }

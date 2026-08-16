@@ -68,12 +68,12 @@ const CATCH_TASKS = {
       return {
         id: "sound",
         targets: [letter],
-        say: () => Speech.speak(soundSay(target, lang), { rate: 0.75 }),
+        say: () => Speech.speak(soundSay(target, lang)),
         distractor: () => alphabet[Math.floor(Math.random() * alphabet.length)],
         head(box){
           const b = h("button", { class:"catch-listen", type:"button",
                                   "aria-label": t("listenLabel") }, "🔊");
-          b.addEventListener("click", () => { Sfx.tap(); Speech.speak(soundSay(target, lang), { rate: 0.75 }); });
+          b.addEventListener("click", () => { Sfx.tap(); Speech.speak(soundSay(target, lang)); });
           box.appendChild(b);
         }
       };

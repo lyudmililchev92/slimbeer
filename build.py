@@ -15,9 +15,10 @@
 
 Кой файл е ръчен и кой генериран:
 
-    ръчни      index.html, sw.js, build.py, src/**, styles/**
-    генерирани app.js, styles.css, dist/**
+    ръчни      index.html, build.py, src/**, styles/**
+    генерирани app.js, styles.css, sw.js, dist/**
 """
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -329,6 +330,15 @@ def main():
 
     (HERE / "app.js").write_text(js, encoding="utf-8")
     (HERE / "styles.css").write_text(css, encoding="utf-8")
+
+    # Печатът върви по съдържанието: нов билд → ново име на кеша → браузърът
+    # инсталира нов worker и изхвърля стария. Без това играта оставаше стара
+    # до следващото отваряне.
+    stamp = hashlib.sha1((js + css + html).encode()).hexdigest()[:10]
+    sw = read("src/sw.js").replace("__STAMP__", stamp)
+    if "__STAMP__" in sw:
+        raise SystemExit("печатът не се записа в sw.js")
+    (HERE / "sw.js").write_text(BANNER.format("src") + sw, encoding="utf-8")
 
     dist = HERE / "dist"
     dist.mkdir(exist_ok=True)

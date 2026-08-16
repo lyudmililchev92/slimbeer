@@ -29,11 +29,15 @@ const Speech = {
   /** Има ли глас за активния (или подадения) език. */
   hasVoice(code){ return this.usable() && !!this.voices[code || State.progress.language]; },
   /** Скорост за активния език, съобразена с настройката на родителя. */
+  /* opts.rate е множител, не абсолютна стойност. Преди беше абсолютна и
+     подсказките се изговаряха по-БЪРЗО от избраното от родителя — точно
+     обратното на замисъла. Сега „по-бавно от обичайното“ значи наистина
+     по-бавно, каквото и да е обичайното. */
   rate(opts){
-    if(opts && opts.rate) return opts.rate;
-    const base = (LANGS[State.progress.language] || {}).rate || 0.8;
+    const base = (LANGS[State.progress.language] || {}).rate || 0.6;
     const mult = SPEECH_SPEEDS[State.progress.speechSpeed] || 1;
-    return Math.max(0.1, Math.min(2, base * mult));
+    const extra = (opts && opts.rate) ? opts.rate : 1;
+    return Math.max(0.1, Math.min(2, base * mult * extra));
   },
   _pending: null,
   attempts: 0,      // колко пъти сме искали изговор

@@ -600,11 +600,14 @@ function renderArt(word, cls){
 const DEFAULT_LANG = "nl";
 
 /* Множители върху основната скорост на езика. Бавно е за най-малките. */
-const SPEECH_SPEEDS = { slow: 0.6, normal: 1, fast: 1.5 };
+/* Скоростите са ниски нарочно. Дете на четири не разчита дума, изговорена
+   с темпото на възрастен — то ѝ чува само края. Дори „бързо“ тук е
+   по-бавно от нормалния говор. */
+const SPEECH_SPEEDS = { slow: 0.45, normal: 0.75, fast: 1.1 };
 
 const LANGS = {
   nl: {
-    name: "Nederlands", flag: "\u{1F1F3}\u{1F1F1}", speech: "nl-NL", rate: 0.5,
+    name: "Nederlands", flag: "\u{1F1F3}\u{1F1F1}", speech: "nl-NL", rate: 0.45,
     alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
     letterSound: {
       A:"aa", B:"bee", C:"see", D:"dee", E:"ee", F:"ef", G:"gee", H:"haa", I:"ie",
@@ -720,7 +723,7 @@ const LANGS = {
   },
 
   bg: {
-    name: "Български", flag: "\u{1F1E7}\u{1F1EC}", speech: "bg-BG", rate: 0.62,
+    name: "Български", flag: "\u{1F1E7}\u{1F1EC}", speech: "bg-BG", rate: 0.52,
     alphabet: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ".split(""),
     letterSound: {
       "А":"а","Б":"бъ","В":"въ","Г":"гъ","Д":"дъ","Е":"е","Ж":"жъ","З":"зъ","И":"и","Й":"й",
@@ -964,7 +967,7 @@ function defaultProgress(){
     language: DEFAULT_LANG,
     totalStars: 0,
     soundEnabled: true,
-    speechSpeed: "normal",
+    speechSpeed: "slow",   // за дете това е изходната точка, не изключението
     autoSpeak: false,   // да изговаря ли думата сама при нов рунд
     tutorialCompleted: false,
     // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
@@ -1004,7 +1007,7 @@ const Store = {
       return Object.assign(base, {
         totalStars: data.totalStars || 0,
         soundEnabled: data.soundEnabled !== false,
-        speechSpeed: "normal",
+        speechSpeed: "slow",   // за дете това е изходната точка, не изключението
         tutorialCompleted: !!data.tutorialCompleted,
         language: "bg",
         byLang: { nl: defaultLangProgress(), bg: bg }
@@ -1423,11 +1426,15 @@ const Speech = {
   /** Има ли глас за активния (или подадения) език. */
   hasVoice(code){ return this.usable() && !!this.voices[code || State.progress.language]; },
   /** Скорост за активния език, съобразена с настройката на родителя. */
+  /* opts.rate е множител, не абсолютна стойност. Преди беше абсолютна и
+     подсказките се изговаряха по-БЪРЗО от избраното от родителя — точно
+     обратното на замисъла. Сега „по-бавно от обичайното“ значи наистина
+     по-бавно, каквото и да е обичайното. */
   rate(opts){
-    if(opts && opts.rate) return opts.rate;
-    const base = (LANGS[State.progress.language] || {}).rate || 0.8;
+    const base = (LANGS[State.progress.language] || {}).rate || 0.6;
     const mult = SPEECH_SPEEDS[State.progress.speechSpeed] || 1;
-    return Math.max(0.1, Math.min(2, base * mult));
+    const extra = (opts && opts.rate) ? opts.rate : 1;
+    return Math.max(0.1, Math.min(2, base * mult * extra));
   },
   _pending: null,
   attempts: 0,      // колко пъти сме искали изговор
@@ -1870,7 +1877,7 @@ const MODE_PHONICS = {
     /* Голям бутон „чуй“ — той е и подканата, и помощта. Детето може да
        го натиска колкото иска; повтарянето не струва нищо. */
     const cue = h("button", { class:"big-listen", type:"button", "aria-label":t("listenLabel") }, "🔊");
-    const say = () => { Sfx.tap(); Speech.speak(phonicsCue(item), { rate: 0.8 }); };
+    const say = () => { Sfx.tap(); Speech.speak(phonicsCue(item)); };
     cue.addEventListener("click", say);
     root.appendChild(cue);
 
@@ -1923,7 +1930,7 @@ const MODE_PHONICS = {
     return {
       maxHints: 2,
       hint(step){
-        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.55 }); return t("hintSoundAgain"); }
+        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.85 }); return t("hintSoundAgain"); }
         const right = Array.from(optsEl.children)
           .find(b => b.getAttribute("aria-label") === correct.display);
         if(right) right.classList.add("right");
@@ -3852,12 +3859,12 @@ const CATCH_TASKS = {
       return {
         id: "sound",
         targets: [letter],
-        say: () => Speech.speak(soundSay(target, lang), { rate: 0.75 }),
+        say: () => Speech.speak(soundSay(target, lang)),
         distractor: () => alphabet[Math.floor(Math.random() * alphabet.length)],
         head(box){
           const b = h("button", { class:"catch-listen", type:"button",
                                   "aria-label": t("listenLabel") }, "🔊");
-          b.addEventListener("click", () => { Sfx.tap(); Speech.speak(soundSay(target, lang), { rate: 0.75 }); });
+          b.addEventListener("click", () => { Sfx.tap(); Speech.speak(soundSay(target, lang)); });
           box.appendChild(b);
         }
       };
@@ -7542,6 +7549,15 @@ function init(){
   if("serviceWorker" in navigator && location.protocol === "https:"){
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").catch(() => {});
+      /* Нов worker поема управлението само когато сглобяването е ново.
+         Тогава презареждаме веднъж, за да не играе детето вчерашната
+         версия. Пазим се от цикъл с флаг. */
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if(reloading) return;
+        reloading = true;
+        location.reload();
+      });
     });
   }
 }

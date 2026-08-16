@@ -27,7 +27,7 @@ function defaultProgress(){
     language: DEFAULT_LANG,
     totalStars: 0,
     soundEnabled: true,
-    speechSpeed: "normal",
+    speechSpeed: "slow",   // за дете това е изходната точка, не изключението
     autoSpeak: false,   // да изговаря ли думата сама при нов рунд
     tutorialCompleted: false,
     // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
@@ -67,7 +67,7 @@ const Store = {
       return Object.assign(base, {
         totalStars: data.totalStars || 0,
         soundEnabled: data.soundEnabled !== false,
-        speechSpeed: "normal",
+        speechSpeed: "slow",   // за дете това е изходната точка, не изключението
         tutorialCompleted: !!data.tutorialCompleted,
         language: "bg",
         byLang: { nl: defaultLangProgress(), bg: bg }

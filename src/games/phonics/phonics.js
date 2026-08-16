@@ -193,7 +193,7 @@ const MODE_PHONICS = {
     /* Голям бутон „чуй“ — той е и подканата, и помощта. Детето може да
        го натиска колкото иска; повтарянето не струва нищо. */
     const cue = h("button", { class:"big-listen", type:"button", "aria-label":t("listenLabel") }, "🔊");
-    const say = () => { Sfx.tap(); Speech.speak(phonicsCue(item), { rate: 0.8 }); };
+    const say = () => { Sfx.tap(); Speech.speak(phonicsCue(item)); };
     cue.addEventListener("click", say);
     root.appendChild(cue);
 
@@ -246,7 +246,7 @@ const MODE_PHONICS = {
     return {
       maxHints: 2,
       hint(step){
-        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.55 }); return t("hintSoundAgain"); }
+        if(step === 1){ Speech.speak(phonicsCue(item), { rate: 0.85 }); return t("hintSoundAgain"); }
         const right = Array.from(optsEl.children)
           .find(b => b.getAttribute("aria-label") === correct.display);
         if(right) right.classList.add("right");
