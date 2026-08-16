@@ -338,6 +338,53 @@ h1,h2,h3,p{margin:0}
 .track-card.t-stories{ background:linear-gradient(160deg,#7BC6E8,#4A9CC8) }
 .track-card.t-quick{ background:linear-gradient(160deg,#F49AC1,#D96A9A) }
 
+/* --- пет свята вместо стена от бутони ------------------------------- */
+.world-grid{
+  display:grid; gap:clamp(8px,2vmin,16px);
+  grid-template-columns:repeat(auto-fit, minmax(clamp(130px,26vmin,200px), 1fr));
+  width:min(720px,94vw); margin:0 auto
+}
+.world-card{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:clamp(4px,1vmin,10px); cursor:pointer; border:none; color:#FFF;
+  min-height:clamp(92px,17vmin,150px); padding:clamp(10px,2vmin,18px);
+  border-radius:var(--r-lg,24px); box-shadow:0 6px 18px rgba(42,42,69,.14)
+}
+.world-icon{ font-size:clamp(30px,6.5vmin,54px); line-height:1 }
+.world-name{
+  font-size:clamp(15px,2.7vmin,22px); font-weight:800; letter-spacing:.02em;
+  text-align:center
+}
+.w-words  { background:linear-gradient(160deg,#8E82E8,#6C5CE7) }
+.w-forest { background:linear-gradient(160deg,#6FBF8A,#3E9B63) }
+.w-math   { background:linear-gradient(160deg,#5FC9AE,#2E9C86) }
+.w-letters{ background:linear-gradient(160deg,#F2A65A,#E4813A) }
+.w-quick  { background:linear-gradient(160deg,#F49AC1,#D96A9A) }
+
+.world-screen .track-row{ margin-top:clamp(8px,2vmin,16px) }
+.track-card.t-link{ background:linear-gradient(160deg,#9AA6C8,#6F7EA8) }
+.track-card.t-phonics{ background:linear-gradient(160deg,#F2A65A,#E4813A) }
+.track-card.t-stories{ background:linear-gradient(160deg,#7BC6E8,#4A9CC8) }
+.track-card.t-quick{ background:linear-gradient(160deg,#F49AC1,#D96A9A) }
+
+/* --- задачки извън екрана ------------------------------------------- */
+.mission-list{ display:flex; flex-direction:column; gap:clamp(8px,1.8vmin,14px) }
+.mission-card{
+  display:flex; align-items:center; gap:clamp(8px,1.8vmin,14px); flex-wrap:wrap;
+  background:#FFF; border-radius:var(--r-md,18px);
+  padding:clamp(10px,2vmin,16px); box-shadow:0 3px 12px rgba(42,42,69,.08)
+}
+.mission-card.done{ background:#DDF6E6 }
+.mission-icon{ font-size:clamp(24px,5vmin,40px) }
+.mission-text{
+  margin:0; flex:1 1 12em; font-size:clamp(16px,2.8vmin,22px);
+  font-weight:700; color:var(--c-ink); line-height:1.35
+}
+.mission-note{
+  margin-top:clamp(10px,2vmin,18px); text-align:center;
+  font-size:var(--fs-small,14px); font-weight:600; color:var(--c-ink-soft)
+}
+
    Игрално поле
    ========================================================================= */
 .stage{
@@ -1583,6 +1630,11 @@ const LANGS = {
       trackPhonics:"KLANKEN", trackStories:"VERHALEN",
       writeFree:"Zelf", writeGuided:"Stap voor stap",
       friends:"Vrienden", friendsTitle:"Mijn vrienden", trackQuick:"SPELLETJES",
+      world_words:"Woorden", world_adventure:"Avontuur", world_numbers:"Getallen",
+      world_letters:"Letters", world_quick:"Spelletjes",
+      missions:"Opdrachten", missionDone:"Gedaan!",
+      missionsHint:"Kleine opdrachten voor buiten het scherm.",
+      missionsNote:"Niemand controleert het. Doe het samen en tik daarna op Gedaan.",
       promptMemory:"Zoek de paren.", promptSort:"Waar hoort het bij?",
       promptOddOne:"Welke hoort er niet bij?", memoryCard:"Kaart",
       hintSortHere:"Deze hoort in dit bakje.", hintOddGroup:"De andere zijn",
@@ -1688,6 +1740,11 @@ const LANGS = {
       trackPhonics:"ЗВУКОВЕ", trackStories:"РАЗКАЗЧЕТА",
       writeFree:"Сам", writeGuided:"Стъпка по стъпка",
       friends:"Приятели", friendsTitle:"Моите приятели", trackQuick:"ИГРИЧКИ",
+      world_words:"Думи", world_adventure:"Приключение", world_numbers:"Числа",
+      world_letters:"Букви", world_quick:"Игрички",
+      missions:"Задачки", missionDone:"Готово!",
+      missionsHint:"Малки задачки за извън екрана.",
+      missionsNote:"Никой не проверява. Направете го заедно и после натиснете Готово.",
       promptMemory:"Намери двойките.", promptSort:"Къде му е мястото?",
       promptOddOne:"Кое не е на място?", memoryCard:"Картичка",
       hintSortHere:"Това отива в тази кутия.", hintOddGroup:"Другите са",
@@ -1862,7 +1919,7 @@ function defaultProgress(){
     // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
     mastery: {},
     // v5: какво е открило детето. Звездите не са валута, а следа от игра.
-    discoveries: { friends: {}, biomes: {} },
+    discoveries: { friends: {}, biomes: {}, missions: {} },
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -1917,6 +1974,7 @@ const Store = {
     if(!out.discoveries || typeof out.discoveries !== "object") out.discoveries = {};
     if(!out.discoveries.friends || typeof out.discoveries.friends !== "object") out.discoveries.friends = {};
     if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
+    if(!out.discoveries.missions || typeof out.discoveries.missions !== "object") out.discoveries.missions = {};
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){
@@ -6718,38 +6776,54 @@ function tileSizeFor(count, wide){
 const Screens = {};
 
 /* ==== src/screens/home.js ==== */
+/* Началният екран: пет свята, не десет бутона.
+ *
+ * Осем отделни карти щяха да са стена от избор за дете на четири. Затова
+ * са пет свята с разбираема икона и по няколко неща вътре. Докосването
+ * върху света го отваря; вътре са пътищата му, с нивото до всеки.
+ *
+ * Светът се изговаря при докосване, защото детето още не чете. */
+
+const WORLDS = [
+  { id:"words",   icon:"📖", color:"w-words",
+    tracks:[ { track:"words",   icon:"📖" },
+             { track:"phonics", icon:"👂" },
+             { track:"stories", icon:"📚" } ] },
+  { id:"adventure", icon:"🌲", color:"w-forest",
+    tracks:[ { track:"forest", icon:"🌲" } ],
+    links:[ { icon:"🦊", key:"friends", screen:"friends" },
+            { icon:"🎒", key:"missions", screen:"missions" } ] },
+  { id:"numbers", icon:"🔢", color:"w-math",
+    tracks:[ { track:"math", icon:"🔢" } ] },
+  { id:"letters", icon:"✏️", color:"w-letters",
+    tracks:[],
+    links:[ { icon:"🔤", key:"letters", screen:"letters" } ] },
+  { id:"quick",   icon:"🎮", color:"w-quick",
+    tracks:[ { track:"quick", icon:"🎮" },
+             { track:"catch", icon:"🕹️" } ] }
+];
+
 Screens.home = function(){
     const p = State.progress;
     const screen = h("section", { class:"screen home" });
 
     const mascot = h("div", { class:"home-mascot", html: mascotSVG() });
-    const trackCard = (track, labelKey, icon, cls) => {
-      const lvl = State.progress.byLang[State.progress.language][track].currentLevel;
-      const b = h("button", { class:"track-card " + cls, type:"button" },
-        h("span", { class:"track-icon" }, icon),
-        h("span", { class:"track-name" }, t(labelKey)),
-        h("span", { class:"track-level" }, t("level") + " " + lvl));
+
+    const worlds = h("div", { class:"world-grid" });
+    WORLDS.forEach(w => {
+      const b = h("button", { class:"world-card " + w.color, type:"button",
+                              "aria-label": t("world_" + w.id) },
+        h("span", { class:"world-icon" }, w.icon),
+        h("span", { class:"world-name" }, t("world_" + w.id)));
       b.addEventListener("click", () => {
         Sfx.tap();
-        State.session.track = track;
-        State.session.recent = [];
-        Router.go("play");
+        Speech.speak(t("world_" + w.id));
+        Router.go("world", { id: w.id });
       });
-      return b;
-    };
-    const tracks = h("div", { class:"track-row" },
-      trackCard("words", "trackWords", "📖", "t-words"),
-      trackCard("math",  "trackMath",  "🔢", "t-math"),
-      trackCard("catch", "trackCatch", "🕹️", "t-catch"),
-      trackCard("forest", "trackForest", "🌲", "t-forest"),
-      trackCard("phonics", "trackPhonics", "👂", "t-phonics"),
-      trackCard("stories", "trackStories", "📚", "t-stories"),
-      trackCard("quick", "trackQuick", "🎮", "t-quick"));
-    const playBtn = tracks.firstChild;
+      worlds.appendChild(b);
+    });
 
     const row = h("div", { class:"home-row" },
-      navBtn("🔤", t("letters"), () => Router.go("letters")),
-      navBtn("🦊", t("friends"), () => Router.go("friends")),
       navBtn("⭐", t("stars"), () => Router.go("stars")),
       navBtn("⚙️", t("settings"), () => Router.go("parents"))
     );
@@ -6759,11 +6833,11 @@ Screens.home = function(){
       h("h1", { class:"logo" }, t("title")),
       h("p", { class:"tagline" }, t("tagline")),
       h("div", { class:"level-chip" }, "⭐ " + p.totalStars),
-      tracks,
+      worlds,
       row
     );
     screen.appendChild(langSwitcher());
-    setTimeout(() => playBtn.focus(), 60);
+    setTimeout(() => worlds.firstChild.focus(), 60);
     return screen;
 
     function langSwitcher(){
@@ -6786,6 +6860,50 @@ Screens.home = function(){
       b.addEventListener("click", () => { Sfx.tap(); fn(); });
       return b;
     }
+};
+
+/* Вътре в един свят: неговите пътища с нивото до всеки. */
+Screens.world = function(params){
+    const world = WORLDS.find(w => w.id === params.id) || WORLDS[0];
+    const screen = h("section", { class:"screen home world-screen" });
+
+    screen.appendChild(h("div", { class:"page-title" },
+      backButton(() => Router.go("home")),
+      h("h1", null, t("world_" + world.id))
+    ));
+
+    const body = h("div", { class:"scroll-area" });
+    const grid = h("div", { class:"track-row" });
+
+    world.tracks.forEach(entry => {
+      const lvl = State.progress.byLang[State.progress.language][entry.track].currentLevel;
+      const b = h("button", { class:"track-card t-" + entry.track, type:"button" },
+        h("span", { class:"track-icon" }, entry.icon),
+        h("span", { class:"track-name" }, t("track" + cap(entry.track))),
+        h("span", { class:"track-level" }, t("level") + " " + lvl));
+      b.addEventListener("click", () => {
+        Sfx.tap();
+        State.session.track = entry.track;
+        State.session.recent = [];
+        Router.go("play");
+      });
+      grid.appendChild(b);
+    });
+
+    (world.links || []).forEach(l => {
+      const b = h("button", { class:"track-card t-link", type:"button" },
+        h("span", { class:"track-icon" }, l.icon),
+        h("span", { class:"track-name" }, t(l.key)));
+      b.addEventListener("click", () => { Sfx.tap(); Router.go(l.screen); });
+      grid.appendChild(b);
+    });
+
+    body.appendChild(grid);
+    screen.appendChild(body);
+    setTimeout(() => { const f = grid.firstChild; if(f) f.focus(); }, 60);
+    return screen;
+
+    function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 };
 
 /* ==== src/screens/play-screen.js ==== */
@@ -7001,6 +7119,42 @@ Screens.write = function(params){
     return screen;
 };
 
+/* ==== src/data/missions.js ==== */
+/* =========================================================================
+ * МИСИИ ИЗВЪН ЕКРАНА
+ * -------------------------------------------------------------------------
+ * Малки задачи за истинския свят: намери нещо кръгло, донеси четири малки
+ * неща, направи буквата О с ръце.
+ *
+ * Устройството НЕ проверява нищо. Няма камера, няма микрофон, няма
+ * местоположение и не се иска никакво разрешение. Детето натиска „Готово“
+ * и получава откритие. Доверието е част от играта.
+ *
+ * `needs` казва за какво умение става дума, за да може екранът да предложи
+ * мисия, свързана с това, което детето точно упражнява.
+ * ========================================================================= */
+
+const MISSIONS = [
+  { id:"red",     icon:"🔴", needs:"color",   bg:"Намери нещо червено.",              nl:"Zoek iets roods." },
+  { id:"round",   icon:"⭕", needs:"shape",   bg:"Намери нещо кръгло.",               nl:"Zoek iets ronds." },
+  { id:"soft",    icon:"🧸", needs:"quality", bg:"Намери нещо меко.",                 nl:"Zoek iets zachts." },
+  { id:"cold",    icon:"🧊", needs:"quality", bg:"Намери нещо студено.",              nl:"Zoek iets kouds." },
+  { id:"four",    icon:"4️⃣", needs:"count",   bg:"Донеси четири малки неща.",         nl:"Breng vier kleine dingen." },
+  { id:"count5",  icon:"🥄", needs:"count",   bg:"Пребройте пет лъжици заедно.",       nl:"Tel samen vijf lepels." },
+  { id:"pairs",   icon:"🧦", needs:"count",   bg:"Намери два еднакви чорапа.",         nl:"Zoek twee dezelfde sokken." },
+  { id:"letterM", icon:"🅼", needs:"letter",  bg:"Намери нещо, което започва с М.",    nl:"Zoek iets dat met M begint." },
+  { id:"letterS", icon:"🆂", needs:"letter",  bg:"Намери нещо, което започва със С.",  nl:"Zoek iets dat met S begint." },
+  { id:"bodyO",   icon:"🙆", needs:"letter",  bg:"Направи буквата О с ръце.",          nl:"Maak de letter O met je armen." },
+  { id:"bodyT",   icon:"🙋", needs:"letter",  bg:"Направи буквата Т с тялото си.",     nl:"Maak de letter T met je lijf." },
+  { id:"tall",    icon:"📏", needs:"compare", bg:"Намери нещо по-високо от теб.",      nl:"Zoek iets dat groter is dan jij." },
+  { id:"small",   icon:"🐜", needs:"compare", bg:"Намери най-малкото нещо в стаята.",  nl:"Zoek het kleinste ding in de kamer." },
+  { id:"sound",   icon:"👂", needs:"sound",   bg:"Затвори очи и чуй три звука.",       nl:"Doe je ogen dicht en hoor drie geluiden." },
+  { id:"outside", icon:"🌳", needs:"nature",  bg:"Намери навън нещо зелено.",          nl:"Zoek buiten iets groens." },
+  { id:"draw",    icon:"🖍️", needs:"draw",    bg:"Нарисувай приятеля си от гората.",   nl:"Teken je vriend uit het bos." },
+  { id:"tell",    icon:"💬", needs:"story",   bg:"Разкажи какво стана в разказчето.",  nl:"Vertel wat er in het verhaal gebeurde." },
+  { id:"help",    icon:"🤝", needs:"story",   bg:"Помогни на някого с нещо малко.",    nl:"Help iemand met iets kleins." }
+];
+
 /* ==== src/screens/friends.js ==== */
 Screens.friends = function(){
     const p = State.progress;
@@ -7061,6 +7215,58 @@ Screens.friends = function(){
       Speech.speak(f.name[lang] + ". " + f.fact[lang]);
     }
 
+    return screen;
+};
+
+/* ==== src/screens/missions.js ==== */
+Screens.missions = function(){
+    const p = State.progress;
+    const lang = p.language;
+    const done = (p.discoveries && p.discoveries.missions) || {};
+
+    const screen = h("section", { class:"screen" });
+    screen.appendChild(h("div", { class:"page-title" },
+      backButton(() => Router.go("world", { id:"adventure" })),
+      h("h1", null, t("missions"))
+    ));
+
+    const body = h("div", { class:"scroll-area" });
+    body.appendChild(h("p", { class:"prompt say" }, t("missionsHint")));
+
+    /* Три мисии наведнъж. Дълъг списък е стена за дете — три са покана.
+       Изборът е стабилен през деня, за да не се сменят при всяко влизане. */
+    const pool = MISSIONS.filter(m => !done[m.id]);
+    const today = pool.length >= 3 ? pool : MISSIONS;
+    const seed = Object.keys(done).length;
+    const three = [];
+    for(let i = 0; i < 3 && i < today.length; i++)
+      three.push(today[(seed * 7 + i * 5) % today.length]);
+
+    const list = h("div", { class:"mission-list" });
+    three.forEach(m => {
+      const card = h("div", { class:"mission-card" },
+        h("span", { class:"mission-icon" }, m.icon),
+        h("p", { class:"mission-text" }, m[lang]));
+      const say = h("button", { class:"line-listen", type:"button",
+                                "aria-label": t("listenLabel") }, "🔊");
+      say.addEventListener("click", () => { Sfx.tap(); Speech.speak(m[lang]); });
+      const ok = h("button", { class:"btn btn-success", type:"button" }, "✅ " + t("missionDone"));
+      ok.addEventListener("click", () => {
+        if(card.classList.contains("done")) return;
+        card.classList.add("done");
+        discover("missions", m.id);
+        addStars(2);
+        Sfx.success();
+        Speech.speak(t("wellDone"));
+        ok.textContent = "⭐ " + t("wellDone");
+      });
+      card.append(say, ok);
+      list.appendChild(card);
+    });
+    body.appendChild(list);
+
+    body.appendChild(h("p", { class:"mission-note" }, t("missionsNote")));
+    screen.appendChild(body);
     return screen;
 };
 

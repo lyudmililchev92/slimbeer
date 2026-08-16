@@ -33,7 +33,7 @@ function defaultProgress(){
     // v4: какво се удава и какво не. Ключът е име на умение, виж mastery.js.
     mastery: {},
     // v5: какво е открило детето. Звездите не са валута, а следа от игра.
-    discoveries: { friends: {}, biomes: {} },
+    discoveries: { friends: {}, biomes: {}, missions: {} },
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -88,6 +88,7 @@ const Store = {
     if(!out.discoveries || typeof out.discoveries !== "object") out.discoveries = {};
     if(!out.discoveries.friends || typeof out.discoveries.friends !== "object") out.discoveries.friends = {};
     if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
+    if(!out.discoveries.missions || typeof out.discoveries.missions !== "object") out.discoveries.missions = {};
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){

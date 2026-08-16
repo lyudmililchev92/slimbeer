@@ -1,35 +1,51 @@
+/* Началният екран: пет свята, не десет бутона.
+ *
+ * Осем отделни карти щяха да са стена от избор за дете на четири. Затова
+ * са пет свята с разбираема икона и по няколко неща вътре. Докосването
+ * върху света го отваря; вътре са пътищата му, с нивото до всеки.
+ *
+ * Светът се изговаря при докосване, защото детето още не чете. */
+
+const WORLDS = [
+  { id:"words",   icon:"📖", color:"w-words",
+    tracks:[ { track:"words",   icon:"📖" },
+             { track:"phonics", icon:"👂" },
+             { track:"stories", icon:"📚" } ] },
+  { id:"adventure", icon:"🌲", color:"w-forest",
+    tracks:[ { track:"forest", icon:"🌲" } ],
+    links:[ { icon:"🦊", key:"friends", screen:"friends" },
+            { icon:"🎒", key:"missions", screen:"missions" } ] },
+  { id:"numbers", icon:"🔢", color:"w-math",
+    tracks:[ { track:"math", icon:"🔢" } ] },
+  { id:"letters", icon:"✏️", color:"w-letters",
+    tracks:[],
+    links:[ { icon:"🔤", key:"letters", screen:"letters" } ] },
+  { id:"quick",   icon:"🎮", color:"w-quick",
+    tracks:[ { track:"quick", icon:"🎮" },
+             { track:"catch", icon:"🕹️" } ] }
+];
+
 Screens.home = function(){
     const p = State.progress;
     const screen = h("section", { class:"screen home" });
 
     const mascot = h("div", { class:"home-mascot", html: mascotSVG() });
-    const trackCard = (track, labelKey, icon, cls) => {
-      const lvl = State.progress.byLang[State.progress.language][track].currentLevel;
-      const b = h("button", { class:"track-card " + cls, type:"button" },
-        h("span", { class:"track-icon" }, icon),
-        h("span", { class:"track-name" }, t(labelKey)),
-        h("span", { class:"track-level" }, t("level") + " " + lvl));
+
+    const worlds = h("div", { class:"world-grid" });
+    WORLDS.forEach(w => {
+      const b = h("button", { class:"world-card " + w.color, type:"button",
+                              "aria-label": t("world_" + w.id) },
+        h("span", { class:"world-icon" }, w.icon),
+        h("span", { class:"world-name" }, t("world_" + w.id)));
       b.addEventListener("click", () => {
         Sfx.tap();
-        State.session.track = track;
-        State.session.recent = [];
-        Router.go("play");
+        Speech.speak(t("world_" + w.id));
+        Router.go("world", { id: w.id });
       });
-      return b;
-    };
-    const tracks = h("div", { class:"track-row" },
-      trackCard("words", "trackWords", "📖", "t-words"),
-      trackCard("math",  "trackMath",  "🔢", "t-math"),
-      trackCard("catch", "trackCatch", "🕹️", "t-catch"),
-      trackCard("forest", "trackForest", "🌲", "t-forest"),
-      trackCard("phonics", "trackPhonics", "👂", "t-phonics"),
-      trackCard("stories", "trackStories", "📚", "t-stories"),
-      trackCard("quick", "trackQuick", "🎮", "t-quick"));
-    const playBtn = tracks.firstChild;
+      worlds.appendChild(b);
+    });
 
     const row = h("div", { class:"home-row" },
-      navBtn("🔤", t("letters"), () => Router.go("letters")),
-      navBtn("🦊", t("friends"), () => Router.go("friends")),
       navBtn("⭐", t("stars"), () => Router.go("stars")),
       navBtn("⚙️", t("settings"), () => Router.go("parents"))
     );
@@ -39,11 +55,11 @@ Screens.home = function(){
       h("h1", { class:"logo" }, t("title")),
       h("p", { class:"tagline" }, t("tagline")),
       h("div", { class:"level-chip" }, "⭐ " + p.totalStars),
-      tracks,
+      worlds,
       row
     );
     screen.appendChild(langSwitcher());
-    setTimeout(() => playBtn.focus(), 60);
+    setTimeout(() => worlds.firstChild.focus(), 60);
     return screen;
 
     function langSwitcher(){
@@ -66,4 +82,48 @@ Screens.home = function(){
       b.addEventListener("click", () => { Sfx.tap(); fn(); });
       return b;
     }
+};
+
+/* Вътре в един свят: неговите пътища с нивото до всеки. */
+Screens.world = function(params){
+    const world = WORLDS.find(w => w.id === params.id) || WORLDS[0];
+    const screen = h("section", { class:"screen home world-screen" });
+
+    screen.appendChild(h("div", { class:"page-title" },
+      backButton(() => Router.go("home")),
+      h("h1", null, t("world_" + world.id))
+    ));
+
+    const body = h("div", { class:"scroll-area" });
+    const grid = h("div", { class:"track-row" });
+
+    world.tracks.forEach(entry => {
+      const lvl = State.progress.byLang[State.progress.language][entry.track].currentLevel;
+      const b = h("button", { class:"track-card t-" + entry.track, type:"button" },
+        h("span", { class:"track-icon" }, entry.icon),
+        h("span", { class:"track-name" }, t("track" + cap(entry.track))),
+        h("span", { class:"track-level" }, t("level") + " " + lvl));
+      b.addEventListener("click", () => {
+        Sfx.tap();
+        State.session.track = entry.track;
+        State.session.recent = [];
+        Router.go("play");
+      });
+      grid.appendChild(b);
+    });
+
+    (world.links || []).forEach(l => {
+      const b = h("button", { class:"track-card t-link", type:"button" },
+        h("span", { class:"track-icon" }, l.icon),
+        h("span", { class:"track-name" }, t(l.key)));
+      b.addEventListener("click", () => { Sfx.tap(); Router.go(l.screen); });
+      grid.appendChild(b);
+    });
+
+    body.appendChild(grid);
+    screen.appendChild(body);
+    setTimeout(() => { const f = grid.firstChild; if(f) f.focus(); }, 60);
+    return screen;
+
+    function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 };
