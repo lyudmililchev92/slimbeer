@@ -43,6 +43,7 @@ function recordResult(item, mistakes, hintsUsed, modeId){
     });
   }
   lp.completedWords += 1;
+  noteActivity(State.session.track);
 
   let stars = CONFIG.starsPerWord.ok;
   if(mistakes === 0 && hintsUsed === 0) stars = CONFIG.starsPerWord.perfect;
@@ -63,6 +64,24 @@ function recordResult(item, mistakes, hintsUsed, modeId){
 
 /* Открито нещо ново. Звездите не са валута — те са следа, че детето е
    било някъде. Затова откритията се пазят отделно и не се харчат. */
+/* Кратък дневник: колко неща е направило детето днес, по път. Пази се
+   само последната седмица и нищо повече — родителят иска да знае какво е
+   играло, не да има досие. */
+function noteActivity(track){
+  const p = State.progress;
+  const log = p.activity || (p.activity = {});
+  const day = new Date().toISOString().slice(0, 10);
+  const today = log[day] || (log[day] = {});
+  today[track] = (today[track] || 0) + 1;
+  const days = Object.keys(log).sort();
+  while(days.length > 7) delete log[days.shift()];
+}
+
+function activityToday(){
+  const log = State.progress.activity || {};
+  return log[new Date().toISOString().slice(0, 10)] || {};
+}
+
 function discover(kind, id){
   const d = State.progress.discoveries || (State.progress.discoveries = { friends:{}, biomes:{} });
   const box = d[kind] || (d[kind] = {});

@@ -150,3 +150,13 @@
   margin:6px 0 2px; font-size:var(--fs-small,15px); font-weight:600;
   color:var(--c-ink-soft); max-width:26em; line-height:1.45
 }
+
+/* идеи за извън екрана — докосват се, за да се чуят */
+.idea-row{
+  display:flex; gap:10px; align-items:flex-start; cursor:pointer;
+  padding:6px 2px
+}
+.idea-row p{
+  margin:0; font-size:var(--fs-body,16px); font-weight:600;
+  color:var(--c-ink); line-height:1.4
+}

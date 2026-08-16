@@ -377,3 +377,13 @@
   .memory-card .card-back, .memory-card .card-front{ transition:none }
   .sort-item.on{ transform:none }
 }
+
+/* Бутонът за нулиране иска задържане, не докосване. Ивицата показва
+   докъде е стигнало и се нулира, щом пръстът се вдигне. */
+.btn.hold{ position:relative; overflow:hidden }
+.btn.hold .hold-fill{
+  position:absolute; left:0; top:0; bottom:0; width:0;
+  background:rgba(255,255,255,.32); pointer-events:none
+}
+.btn.hold.holding{ transform:scale(.97) }
+@media (prefers-reduced-motion: reduce){ .btn.hold.holding{ transform:none } }

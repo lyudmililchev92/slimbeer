@@ -34,6 +34,8 @@ function defaultProgress(){
     mastery: {},
     // v5: какво е открило детето. Звездите не са валута, а следа от игра.
     discoveries: { friends: {}, biomes: {}, missions: {} },
+    // v6: с какво се е занимавало детето последните дни. Само брой, само 7 дни.
+    activity: {},
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -89,6 +91,7 @@ const Store = {
     if(!out.discoveries.friends || typeof out.discoveries.friends !== "object") out.discoveries.friends = {};
     if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
     if(!out.discoveries.missions || typeof out.discoveries.missions !== "object") out.discoveries.missions = {};
+    if(!out.activity || typeof out.activity !== "object") out.activity = {};
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){

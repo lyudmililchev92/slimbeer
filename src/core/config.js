@@ -5,7 +5,7 @@ const DEBUG = false;                 // true → показва debug панел
 
 const CONFIG = {
   saveKey: "bukvik.save",
-  saveVersion: 5,
+  saveVersion: 6,
   starsPerWord: { perfect: 3, good: 2, ok: 1 },
   mistakesForHighlight: 2,           // след толкова грешки — ненатрапчиво подсказваме
   celebrateEvery: 5,                 // на всеки N решени думи — малък празник

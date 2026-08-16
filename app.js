@@ -395,7 +395,7 @@ const DEBUG = false;                 // true → показва debug панел
 
 const CONFIG = {
   saveKey: "bukvik.save",
-  saveVersion: 5,
+  saveVersion: 6,
   starsPerWord: { perfect: 3, good: 2, ok: 1 },
   mistakesForHighlight: 2,           // след толкова грешки — ненатрапчиво подсказваме
   celebrateEvery: 5,                 // на всеки N решени думи — малък празник
@@ -635,6 +635,11 @@ const LANGS = {
       forParents:"Voor ouders", statPlayed:"gespeelde woorden", statLearned:"geleerde woorden",
       statFirstTry:"eerste keer goed", statLevel:"huidig niveau", statStars:"sterren",
       statLetters:"letters gezien", statSums:"sommen gemaakt", statMathLevel:"rekenniveau", settingsHead:"Instellingen",
+      todayHead:"Vandaag", todayNone:"Vandaag nog niet gespeeld.",
+      holdToConfirm:"Ingedrukt houden",
+      offscreenHead:"Samen zonder scherm",
+      ideaLetter:"Zoek samen drie dingen in huis die met {L} beginnen.",
+      ideaCount:"Tel samen de lepels of de traptreden.",
       skillsHead:"Wat oefent je kind", skillsGoing:"Gaat goed", skillsPractising:"Nog oefenen",
       skillsSounds:"Beginklanken", skillsWriting:"Schrijven", skillsNone:"Nog te weinig gespeeld om iets te zeggen.",
       soundSpeech:"Geluid en spraak", voiceLabel:"Stem", voiceOk:"beschikbaar",
@@ -745,6 +750,11 @@ const LANGS = {
       forParents:"За родителя", statPlayed:"изиграни думи", statLearned:"научени думи",
       statFirstTry:"верни от първия път", statLevel:"текущо ниво", statStars:"звезди",
       statLetters:"срещнати букви", statSums:"решени сметки", statMathLevel:"ниво по смятане", settingsHead:"Настройки",
+      todayHead:"Днес", todayNone:"Днес още не е играло.",
+      holdToConfirm:"Задръж натиснато",
+      offscreenHead:"Заедно, без екран",
+      ideaLetter:"Потърсете вкъщи три неща, които започват с {L}.",
+      ideaCount:"Пребройте заедно лъжиците или стъпалата.",
       skillsHead:"Какво упражнява детето", skillsGoing:"Върви добре", skillsPractising:"Още се упражнява",
       skillsSounds:"Първи звукове", skillsWriting:"Писане", skillsNone:"Още е играло малко, за да се каже нещо.",
       soundSpeech:"Звук и говор", voiceLabel:"Глас", voiceOk:"наличен",
@@ -941,6 +951,8 @@ function defaultProgress(){
     mastery: {},
     // v5: какво е открило детето. Звездите не са валута, а следа от игра.
     discoveries: { friends: {}, biomes: {}, missions: {} },
+    // v6: с какво се е занимавало детето последните дни. Само брой, само 7 дни.
+    activity: {},
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -996,6 +1008,7 @@ const Store = {
     if(!out.discoveries.friends || typeof out.discoveries.friends !== "object") out.discoveries.friends = {};
     if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
     if(!out.discoveries.missions || typeof out.discoveries.missions !== "object") out.discoveries.missions = {};
+    if(!out.activity || typeof out.activity !== "object") out.activity = {};
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){
@@ -1071,6 +1084,7 @@ function recordResult(item, mistakes, hintsUsed, modeId){
     });
   }
   lp.completedWords += 1;
+  noteActivity(State.session.track);
 
   let stars = CONFIG.starsPerWord.ok;
   if(mistakes === 0 && hintsUsed === 0) stars = CONFIG.starsPerWord.perfect;
@@ -1091,6 +1105,24 @@ function recordResult(item, mistakes, hintsUsed, modeId){
 
 /* Открито нещо ново. Звездите не са валута — те са следа, че детето е
    било някъде. Затова откритията се пазят отделно и не се харчат. */
+/* Кратък дневник: колко неща е направило детето днес, по път. Пази се
+   само последната седмица и нищо повече — родителят иска да знае какво е
+   играло, не да има досие. */
+function noteActivity(track){
+  const p = State.progress;
+  const log = p.activity || (p.activity = {});
+  const day = new Date().toISOString().slice(0, 10);
+  const today = log[day] || (log[day] = {});
+  today[track] = (today[track] || 0) + 1;
+  const days = Object.keys(log).sort();
+  while(days.length > 7) delete log[days.shift()];
+}
+
+function activityToday(){
+  const log = State.progress.activity || {};
+  return log[new Date().toISOString().slice(0, 10)] || {};
+}
+
 function discover(kind, id){
   const d = State.progress.discoveries || (State.progress.discoveries = { friends:{}, biomes:{} });
   const box = d[kind] || (d[kind] = {});
@@ -6353,6 +6385,14 @@ Screens.parents = function(){
     body.appendChild(h("h2", { class:"section-head" }, t("skillsHead")));
     body.appendChild(h("div", { class:"card skills-card" }, skillSummary()));
 
+    /* Днес: с какво се е занимавало. Кратко и без история назад. */
+    body.appendChild(h("h2", { class:"section-head" }, t("todayHead")));
+    body.appendChild(h("div", { class:"card skills-card" }, todaySummary()));
+
+    /* Какво да се направи извън екрана — избрано според слабото. */
+    body.appendChild(h("h2", { class:"section-head" }, t("offscreenHead")));
+    body.appendChild(h("div", { class:"card skills-card" }, offscreenIdeas()));
+
     /* настройки */
     body.appendChild(h("h2", { class:"section-head" }, t("settingsHead")));
     const soundToggle = h("button", {
@@ -6538,21 +6578,94 @@ Screens.parents = function(){
       return rows;
     }
 
+    /* Ред на ден: колко неща по кой път. Ако още не е играло — казваме го. */
+    function todaySummary(){
+      const today = activityToday();
+      const rows = [];
+      const label = { words:"trackWords", math:"trackMath", catch:"trackCatch",
+                      forest:"trackForest", phonics:"trackPhonics",
+                      stories:"trackStories", quick:"trackQuick" };
+      TRACK_IDS.forEach(tr => {
+        if(!today[tr]) return;
+        rows.push(h("div", { class:"skill-row" },
+          h("span", { class:"skill-label" }, t(label[tr] || tr)),
+          h("span", { class:"skill-letters" }, String(today[tr]))));
+      });
+      if(!rows.length) return [h("p", { class:"prompt" }, t("todayNone"))];
+      return rows;
+    }
+
+    /* Идея за извън екрана, свързана с това, което точно куца. Без сървър,
+       без изкуствен интелект — просто съответствие между умение и задачка. */
+    function offscreenIdeas(){
+      const lang = p.language;
+      const weakLetters = Mastery.ranked("letter." + lang + ".")
+        .filter(x => x.attempts >= 3 && x.mastery < 0.4);
+      const weakMath = Mastery.ranked("math.").filter(x => x.attempts >= 3 && x.mastery < 0.5);
+
+      const picks = [];
+      if(weakLetters.length){
+        const ch = weakLetters[0].id.split(".")[2];
+        picks.push(t("ideaLetter").replace("{L}", ch));
+      }
+      if(weakMath.length) picks.push(t("ideaCount"));
+      MISSIONS.slice(0, 12).forEach(m => { if(picks.length < 3) picks.push(m[lang]); });
+
+      return picks.slice(0, 3).map(text => {
+        const row = h("div", { class:"idea-row" }, h("span", null, "💡"), h("p", null, text));
+        row.addEventListener("click", () => { Sfx.tap(); Speech.speak(text); });
+        return row;
+      });
+    }
+
     function stat(num, lbl){
       return h("div", { class:"stat" }, h("div", { class:"num" }, String(num)), h("div", { class:"lbl" }, lbl));
     }
     /** Питаме, преди да върнем нещо назад. */
+    /* Нулирането трие напредъка на дете. Едно докосване не стига — трябва
+       задържане. Без ПИН: ПИН се забравя и заключва родителя, а задържането
+       е нещо, което малка ръка няма да направи случайно. */
     function confirmAction(title, text, onYes){
       const ov = h("div", { class:"overlay", role:"dialog", "aria-modal":"true", "aria-label":title });
       const no = h("button", { class:"btn btn-ghost", type:"button" }, t("cancel"));
-      const yes = h("button", { class:"btn btn-danger", type:"button" }, t("confirmYes"));
-      no.addEventListener("click", () => ov.remove());
-      yes.addEventListener("click", () => { onYes(); ov.remove(); });
+      const yes = h("button", { class:"btn btn-danger hold", type:"button" }, t("holdToConfirm"));
+      const fill = h("span", { class:"hold-fill" });
+      yes.appendChild(fill);
+
+      const HOLD = 1600;
+      let timer = null, started = 0, raf = 0;
+      const stop = () => {
+        if(timer) clearTimeout(timer);
+        if(raf) cancelAnimationFrame(raf);
+        timer = raf = 0;
+        fill.style.width = "0%";
+        yes.classList.remove("holding");
+      };
+      const tick = () => {
+        const f = Math.min(1, (Date.now() - started) / HOLD);
+        fill.style.width = (f * 100) + "%";
+        if(f < 1) raf = requestAnimationFrame(tick);
+      };
+      const begin = (e) => {
+        e.preventDefault();
+        if(timer) return;
+        started = Date.now();
+        yes.classList.add("holding");
+        if(!REDUCED_MOTION) raf = requestAnimationFrame(tick); else fill.style.width = "100%";
+        timer = setTimeout(() => { stop(); onYes(); ov.remove(); }, HOLD);
+      };
+      yes.addEventListener("pointerdown", begin);
+      ["pointerup", "pointerleave", "pointercancel"].forEach(ev => yes.addEventListener(ev, stop));
+      // клавиатурата е за родителя: Enter задържа, докато се държи
+      yes.addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " ") begin(e); });
+      yes.addEventListener("keyup", stop);
+
+      no.addEventListener("click", () => { stop(); ov.remove(); });
       ov.appendChild(h("div", { class:"modal-card" },
         h("h2", null, title), h("p", null, text),
         h("div", { class:"modal-actions" }, no, yes)));
       screen.appendChild(ov);
-      yes.focus();
+      no.focus();
     }
 };
 

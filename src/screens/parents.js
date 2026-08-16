@@ -27,6 +27,14 @@ Screens.parents = function(){
     body.appendChild(h("h2", { class:"section-head" }, t("skillsHead")));
     body.appendChild(h("div", { class:"card skills-card" }, skillSummary()));
 
+    /* Днес: с какво се е занимавало. Кратко и без история назад. */
+    body.appendChild(h("h2", { class:"section-head" }, t("todayHead")));
+    body.appendChild(h("div", { class:"card skills-card" }, todaySummary()));
+
+    /* Какво да се направи извън екрана — избрано според слабото. */
+    body.appendChild(h("h2", { class:"section-head" }, t("offscreenHead")));
+    body.appendChild(h("div", { class:"card skills-card" }, offscreenIdeas()));
+
     /* настройки */
     body.appendChild(h("h2", { class:"section-head" }, t("settingsHead")));
     const soundToggle = h("button", {
@@ -212,20 +220,93 @@ Screens.parents = function(){
       return rows;
     }
 
+    /* Ред на ден: колко неща по кой път. Ако още не е играло — казваме го. */
+    function todaySummary(){
+      const today = activityToday();
+      const rows = [];
+      const label = { words:"trackWords", math:"trackMath", catch:"trackCatch",
+                      forest:"trackForest", phonics:"trackPhonics",
+                      stories:"trackStories", quick:"trackQuick" };
+      TRACK_IDS.forEach(tr => {
+        if(!today[tr]) return;
+        rows.push(h("div", { class:"skill-row" },
+          h("span", { class:"skill-label" }, t(label[tr] || tr)),
+          h("span", { class:"skill-letters" }, String(today[tr]))));
+      });
+      if(!rows.length) return [h("p", { class:"prompt" }, t("todayNone"))];
+      return rows;
+    }
+
+    /* Идея за извън екрана, свързана с това, което точно куца. Без сървър,
+       без изкуствен интелект — просто съответствие между умение и задачка. */
+    function offscreenIdeas(){
+      const lang = p.language;
+      const weakLetters = Mastery.ranked("letter." + lang + ".")
+        .filter(x => x.attempts >= 3 && x.mastery < 0.4);
+      const weakMath = Mastery.ranked("math.").filter(x => x.attempts >= 3 && x.mastery < 0.5);
+
+      const picks = [];
+      if(weakLetters.length){
+        const ch = weakLetters[0].id.split(".")[2];
+        picks.push(t("ideaLetter").replace("{L}", ch));
+      }
+      if(weakMath.length) picks.push(t("ideaCount"));
+      MISSIONS.slice(0, 12).forEach(m => { if(picks.length < 3) picks.push(m[lang]); });
+
+      return picks.slice(0, 3).map(text => {
+        const row = h("div", { class:"idea-row" }, h("span", null, "💡"), h("p", null, text));
+        row.addEventListener("click", () => { Sfx.tap(); Speech.speak(text); });
+        return row;
+      });
+    }
+
     function stat(num, lbl){
       return h("div", { class:"stat" }, h("div", { class:"num" }, String(num)), h("div", { class:"lbl" }, lbl));
     }
     /** Питаме, преди да върнем нещо назад. */
+    /* Нулирането трие напредъка на дете. Едно докосване не стига — трябва
+       задържане. Без ПИН: ПИН се забравя и заключва родителя, а задържането
+       е нещо, което малка ръка няма да направи случайно. */
     function confirmAction(title, text, onYes){
       const ov = h("div", { class:"overlay", role:"dialog", "aria-modal":"true", "aria-label":title });
       const no = h("button", { class:"btn btn-ghost", type:"button" }, t("cancel"));
-      const yes = h("button", { class:"btn btn-danger", type:"button" }, t("confirmYes"));
-      no.addEventListener("click", () => ov.remove());
-      yes.addEventListener("click", () => { onYes(); ov.remove(); });
+      const yes = h("button", { class:"btn btn-danger hold", type:"button" }, t("holdToConfirm"));
+      const fill = h("span", { class:"hold-fill" });
+      yes.appendChild(fill);
+
+      const HOLD = 1600;
+      let timer = null, started = 0, raf = 0;
+      const stop = () => {
+        if(timer) clearTimeout(timer);
+        if(raf) cancelAnimationFrame(raf);
+        timer = raf = 0;
+        fill.style.width = "0%";
+        yes.classList.remove("holding");
+      };
+      const tick = () => {
+        const f = Math.min(1, (Date.now() - started) / HOLD);
+        fill.style.width = (f * 100) + "%";
+        if(f < 1) raf = requestAnimationFrame(tick);
+      };
+      const begin = (e) => {
+        e.preventDefault();
+        if(timer) return;
+        started = Date.now();
+        yes.classList.add("holding");
+        if(!REDUCED_MOTION) raf = requestAnimationFrame(tick); else fill.style.width = "100%";
+        timer = setTimeout(() => { stop(); onYes(); ov.remove(); }, HOLD);
+      };
+      yes.addEventListener("pointerdown", begin);
+      ["pointerup", "pointerleave", "pointercancel"].forEach(ev => yes.addEventListener(ev, stop));
+      // клавиатурата е за родителя: Enter задържа, докато се държи
+      yes.addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " ") begin(e); });
+      yes.addEventListener("keyup", stop);
+
+      no.addEventListener("click", () => { stop(); ov.remove(); });
       ov.appendChild(h("div", { class:"modal-card" },
         h("h2", null, title), h("p", null, text),
         h("div", { class:"modal-actions" }, no, yes)));
       screen.appendChild(ov);
-      yes.focus();
+      no.focus();
     }
 };

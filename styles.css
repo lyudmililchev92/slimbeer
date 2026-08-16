@@ -752,6 +752,16 @@ h1,h2,h3,p{margin:0}
   .sort-item.on{ transform:none }
 }
 
+/* Бутонът за нулиране иска задържане, не докосване. Ивицата показва
+   докъде е стигнало и се нулира, щом пръстът се вдигне. */
+.btn.hold{ position:relative; overflow:hidden }
+.btn.hold .hold-fill{
+  position:absolute; left:0; top:0; bottom:0; width:0;
+  background:rgba(255,255,255,.32); pointer-events:none
+}
+.btn.hold.holding{ transform:scale(.97) }
+@media (prefers-reduced-motion: reduce){ .btn.hold.holding{ transform:none } }
+
    Карти / решетки (букви, звезди, родители)
    ========================================================================= */
 .page-title{display:flex;align-items:center;gap:var(--s-3);padding:2px 2px var(--s-4);flex:0 0 auto}
@@ -903,6 +913,16 @@ h1,h2,h3,p{margin:0}
 .friend-fact{
   margin:6px 0 2px; font-size:var(--fs-small,15px); font-weight:600;
   color:var(--c-ink-soft); max-width:26em; line-height:1.45
+}
+
+/* идеи за извън екрана — докосват се, за да се чуят */
+.idea-row{
+  display:flex; gap:10px; align-items:flex-start; cursor:pointer;
+  padding:6px 2px
+}
+.idea-row p{
+  margin:0; font-size:var(--fs-body,16px); font-weight:600;
+  color:var(--c-ink); line-height:1.4
 }
 
    Адаптивност
