@@ -2078,7 +2078,18 @@ const FOREST_THEMES = {
   winter: { sky1:"#CFE6F8", sky2:"#F4FBFF", h1:"#E6F2FB", h2:"#CFE3F1",
             gr:"#F0F7FC", grass:"#B7D6EC", t1:"#4E8A6A", t2:"#6BA585",
             trunk:"#6B5344", sun:"rgba(255,250,230,.9)", air:"❄️",
-            stars:false, snow:true }
+            stars:false, snow:true },
+  blossom:{ sky1:"#BFE6F5", sky2:"#F0FBFF", h1:"#CDEBC8", h2:"#B4DFB0",
+            gr:"#8CC98A", grass:"#6FB472", t1:"#F2A6C4", t2:"#FFC2D8",
+            trunk:"#7A5642", sun:"rgba(255,246,200,.95)", air:"🌸", stars:false },
+  beach:  { sky1:"#7FD4EC", sky2:"#D8F5FB", h1:"#F2E0B8", h2:"#E6CE9C",
+            gr:"#F0DFB4", grass:"#D9C48E", t1:"#4FA36F", t2:"#6FBE88",
+            trunk:"#9C7248", sun:"rgba(255,240,160,.95)", air:"🐚",
+            stars:false, palm:true },
+  cave:   { sky1:"#1E1A2E", sky2:"#3A3050", h1:"#2A2440", h2:"#37304F",
+            gr:"#453A5C", grass:"#5A4A74", t1:"#4E4270", t2:"#5E5085",
+            trunk:"#3A3152", sun:"rgba(180,220,255,.35)", air:"✨",
+            stars:false, rock:true }
 };
 
 /* Всяко ниво е малка история: горски приятел има нужда от нещо и детето
@@ -2104,7 +2115,17 @@ const FOREST_QUESTS = [
   { who:"🦌", item:"🎁", nl:"cadeaus",    bg:"подаръци" },
   { who:"🐢", item:"🍀", nl:"klavertjes", bg:"детелини" },
   { who:"🦜", item:"🥜", nl:"pinda's",    bg:"фъстъци" },
-  { who:"🦫", item:"🪵", nl:"stokjes",    bg:"клечки" }
+  { who:"🦫", item:"🪵", nl:"stokjes",    bg:"клечки" },
+  { who:"🐨", item:"🌿", nl:"kruiden",    bg:"стръкчета" },
+  { who:"🐼", item:"🎋", nl:"bamboe",     bg:"бамбук" },
+  { who:"🐣", item:"🌾", nl:"korenaren",  bg:"класчета" },
+  { who:"🦀", item:"🐚", nl:"schelpen",   bg:"мидички" },
+  { who:"🐬", item:"🎈", nl:"ballonnen",  bg:"балони" },
+  { who:"🦭", item:"🍦", nl:"ijsjes",     bg:"сладоледи" },
+  { who:"🐭", item:"🧀", nl:"kaasjes",    bg:"парченца сирене" },
+  { who:"🐛", item:"🍇", nl:"druiven",    bg:"гроздове" },
+  { who:"🦄", item:"🌈", nl:"regenbogen", bg:"дъги" },
+  { who:"🧚", item:"🔮", nl:"toverbollen", bg:"вълшебни кълба" }
 ];
 
 const MODE_FOREST = {
@@ -2366,6 +2387,53 @@ const MODE_FOREST = {
     }
     /* Дърво от заоблени корони — по-меко и по-детско от триъгълници. */
     function tree(x, y, s, seed){
+      if(TH.rock){
+        // в пещерата растат камъни: зъбер със светещ кристал отгоре
+        ctx.fillStyle = seed % 2 ? TH.t1 : TH.t2;
+        ctx.beginPath();
+        ctx.moveTo(x - s*0.26, y);
+        ctx.lineTo(x - s*0.10, y - s*0.82 - (seed % 5) * s*0.04);
+        ctx.lineTo(x + s*0.08, y - s*0.60);
+        ctx.lineTo(x + s*0.28, y);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.10)";
+        ctx.beginPath();
+        ctx.moveTo(x - s*0.26, y); ctx.lineTo(x - s*0.10, y - s*0.82); ctx.lineTo(x - s*0.02, y);
+        ctx.closePath(); ctx.fill();
+        const gx = x - s*0.10, gy = y - s*0.86 - (seed % 5) * s*0.04;
+        const gl = ctx.createRadialGradient(gx, gy, 0, gx, gy, s*0.18);
+        gl.addColorStop(0, "rgba(150,225,255,.75)"); gl.addColorStop(1, "rgba(150,225,255,0)");
+        ctx.fillStyle = gl;
+        ctx.beginPath(); ctx.arc(gx, gy, s*0.18, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#9EE7FF";
+        ctx.beginPath();
+        ctx.moveTo(gx, gy - s*0.07); ctx.lineTo(gx + s*0.045, gy);
+        ctx.lineTo(gx, gy + s*0.07); ctx.lineTo(gx - s*0.045, gy);
+        ctx.closePath(); ctx.fill();
+        return;
+      }
+      if(TH.palm){
+        // на плажа растат палми: наклонен ствол, ветрило от листа, кокоси
+        const lean = ((seed % 3) - 1) * s*0.10;
+        ctx.strokeStyle = TH.trunk;
+        ctx.lineWidth = s*0.075; ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + lean*0.6, y - s*0.42, x + lean, y - s*0.78);
+        ctx.stroke();
+        const tx = x + lean, ty = y - s*0.78;
+        [-1.15, -0.62, 0, 0.62, 1.15].forEach((a, i) => {
+          ctx.fillStyle = i % 2 ? TH.t1 : TH.t2;
+          ctx.save(); ctx.translate(tx, ty); ctx.rotate(a);
+          ctx.beginPath();
+          ctx.ellipse(0, -s*0.17, s*0.09, s*0.20, 0, 0, Math.PI*2);
+          ctx.fill(); ctx.restore();
+        });
+        ctx.fillStyle = "#8A6244";
+        ctx.beginPath(); ctx.arc(tx - s*0.05, ty + s*0.05, s*0.045, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(tx + s*0.05, ty + s*0.06, s*0.04, 0, Math.PI*2); ctx.fill();
+        return;
+      }
       ctx.fillStyle = TH.trunk;
       ctx.beginPath();
       ctx.roundRect(x - s*0.06, y - s*0.46, s*0.12, s*0.46, s*0.04);
@@ -2536,11 +2604,19 @@ const MODE_FOREST = {
         }
         ctx.globalAlpha = 1;
       }
-      ctx.fillStyle = TH.sun;
-      ctx.beginPath(); ctx.arc(W*0.84, H*0.15, H*0.07, 0, Math.PI*2); ctx.fill();
+      if(TH.rock){
+        // под земята няма слънце — само мека светлина от процеп в тавана
+        const lg = ctx.createRadialGradient(W*0.78, 0, 0, W*0.78, 0, H*0.55);
+        lg.addColorStop(0, TH.sun); lg.addColorStop(1, "rgba(180,220,255,0)");
+        ctx.fillStyle = lg;
+        ctx.beginPath(); ctx.arc(W*0.78, 0, H*0.55, 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.fillStyle = TH.sun;
+        ctx.beginPath(); ctx.arc(W*0.84, H*0.15, H*0.07, 0, Math.PI*2); ctx.fill();
+      }
 
       // облаци, които плуват бавно
-      if(!TH.stars){
+      if(!TH.stars && !TH.rock){
         ctx.fillStyle = "rgba(255,255,255,.72)";
         for(let k = 0; k < 3; k++){
           const cx2 = ((k * 0.42 * W - camX * 0.05) % (W * 1.5) + W * 1.5) % (W * 1.5) - W*0.2;
@@ -2581,6 +2657,7 @@ const MODE_FOREST = {
           }
           if((idx * 13 + k) % 6 === 0){
             ctx.fillStyle = TH.snow ? "#FFF"
+                          : TH.rock ? "#8FE3FF"
                           : TH.stars ? "#C9C2F0"
                           : ["#FF9DBB", "#FFD166", "#FFF"][(idx + k) % 3];
             ctx.beginPath(); ctx.arc(gx + 6, ground - tall * 1.25, 3.6, 0, Math.PI*2); ctx.fill();
@@ -2591,8 +2668,9 @@ const MODE_FOREST = {
         if(c.pit){
           const px = c.pit.x - camX;
           const wg = ctx.createLinearGradient(0, ground, 0, H);
-          wg.addColorStop(0, TH.snow ? "#BEE6F5" : TH.stars ? "#4A6E9E" : "#9FD3EE");
-          wg.addColorStop(1, TH.snow ? "#79BEDC" : TH.stars ? "#2E4A70" : "#6FB6DC");
+          const deep = TH.stars || TH.rock;
+          wg.addColorStop(0, TH.snow ? "#BEE6F5" : deep ? "#4A6E9E" : "#9FD3EE");
+          wg.addColorStop(1, TH.snow ? "#79BEDC" : deep ? "#2E4A70" : "#6FB6DC");
           ctx.fillStyle = wg;
           ctx.fillRect(px, ground, c.pit.w, H - ground);
           // вълнички, които се движат
@@ -2969,10 +3047,23 @@ const FOREST_LEVELS = [
   { id:15, theme:"winter", quest:14, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, nuts:13, pits:0.26, speed:1.33, zones:1.0, zoneKinds:["count","color"], countMax:10, movers:0.55, modes:["forest"] },
   { id:16, theme:"winter", quest:15, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:14, pits:0.27, speed:1.35, zones:1.0, zoneKinds:["sum","count"], sumMax:10, countMax:10, movers:0.60, modes:["forest"] },
   { id:17, theme:"winter", quest:16, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:14, pits:0.28, speed:1.37, zones:1.0, zoneKinds:["sum","first","color"], sumMax:10, movers:0.60, modes:["forest"] },
-  // ФИНАЛ — обратно в нощната гора, най-трудното
+  // ДЪЛБОКАТА НОЩ
   { id:18, theme:"night", quest:17, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:15, pits:0.28, speed:1.39, zones:1.0, zoneKinds:["sum","count","first"], sumMax:10, countMax:10, movers:0.65, modes:["forest"] },
   { id:19, theme:"night", quest:18, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:8, nuts:16, pits:0.29, speed:1.41, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.70, modes:["forest"] },
-  { id:20, theme:"night", quest:19, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:18, pits:0.30, speed:1.43, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.75, modes:["forest"] }
+  { id:20, theme:"night", quest:19, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:18, pits:0.30, speed:1.43, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.75, modes:["forest"] },
+  // ПРОЛЕТ — розови корони след дългата нощ
+  { id:21, theme:"blossom", quest:20, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:16, pits:0.28, speed:1.30, zones:1.0, zoneKinds:["count","color"], countMax:10, movers:0.55, modes:["forest"] },
+  { id:22, theme:"blossom", quest:21, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:17, pits:0.29, speed:1.33, zones:1.0, zoneKinds:["sum","first"], sumMax:10, movers:0.60, modes:["forest"] },
+  { id:23, theme:"blossom", quest:22, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:17, pits:0.30, speed:1.36, zones:1.0, zoneKinds:["sum","count","color"], sumMax:10, countMax:10, movers:0.60, modes:["forest"] },
+  // МОРЕ — пясък, палми и много вода
+  { id:24, theme:"beach", quest:23, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:9, nuts:18, pits:0.31, speed:1.38, zones:1.0, zoneKinds:["count","first"], countMax:10, movers:0.62, modes:["forest"] },
+  { id:25, theme:"beach", quest:24, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:19, pits:0.32, speed:1.40, zones:1.0, zoneKinds:["sum","color"], sumMax:10, movers:0.65, modes:["forest"] },
+  { id:26, theme:"beach", quest:25, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:19, pits:0.33, speed:1.43, zones:1.0, zoneKinds:["sum","count","first"], sumMax:10, countMax:10, movers:0.68, modes:["forest"] },
+  // ПЕЩЕРА — светещи кристали вместо дървета, най-трудното
+  { id:27, theme:"cave", quest:26, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:20, pits:0.33, speed:1.45, zones:1.0, zoneKinds:["count","color"], countMax:10, movers:0.70, modes:["forest"] },
+  { id:28, theme:"cave", quest:27, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:21, pits:0.34, speed:1.47, zones:1.0, zoneKinds:["sum","first"], sumMax:10, movers:0.72, modes:["forest"] },
+  { id:29, theme:"cave", quest:28, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:21, pits:0.34, speed:1.49, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.75, modes:["forest"] },
+  { id:30, theme:"cave", quest:29, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:10, nuts:22, pits:0.35, speed:1.52, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.80, modes:["forest"] }
 ];
 
 const CATCH_LEVELS = [

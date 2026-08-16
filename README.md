@@ -23,7 +23,7 @@ The game is called *Letterbeer* in Dutch and *Буквик* in Bulgarian.
 | Listen and choose | Hears a word, picks the matching picture |
 | Read and choose | Reads a written word, picks the matching picture |
 
-**Forest — 20 levels across six seasons, a side-scrolling platformer.** Boekie runs to the right
+**Forest — 30 levels across nine places, a side-scrolling platformer.** Boekie runs to the right
 on his own; the child's only control is a tap to jump, plus a second jump in
 mid-air. Letters float at jump height, so nothing is picked up by accident —
 every letter is a decision. Platforms to land on, bouncy mushrooms, and water
@@ -33,8 +33,9 @@ Every level is a small errand. A forest friend waits near the start with a
 speech bubble showing what they need, and waits again at the gate: a squirrel
 wants acorns, a bird wants eggs, a bee wants flowers, a bear wants honey, a
 dragon wants crystals, a penguin wants ice, a snowman wants snowflakes, a
-beaver wants sticks — twenty friends, twenty things to gather. The orders grow
-with the levels, from three acorns to eighteen sticks.
+beaver wants sticks, a mouse wants cheese, a fairy wants magic orbs — thirty
+friends, thirty things to gather. The orders grow with the levels, from three
+acorns to twenty-two orbs.
 
 Finding them all opens the star-gate. The word floating around the level is a
 **bonus**: complete it and you get extra stars, skip it and the level still
@@ -53,9 +54,11 @@ with three platforms below. Land on the right one:
 All are optional and pay bonus stars, so a child who ignores them still
 finishes the level.
 
-The seasons change as the levels go: meadow, forest, autumn, dusk with a low
-orange sun, night with stars and fireflies, then winter — snow on the tree
-crowns, drifts along the ground, pale ice in the water gaps. Later levels add
+The scenery changes as the levels go: meadow, forest, autumn, dusk with a low
+orange sun, night with stars and fireflies, winter with snow on the tree crowns
+and pale ice in the water gaps, spring with pink blossom, a beach of sand and
+palms, and finally a cave — glowing crystal spires instead of trees, lit only by
+a shaft of daylight from the ceiling. Later levels add
 platforms that drift up and down. Water
 gaps are sized from the actual jump arc, so every one of them can be cleared
 with a single jump.
@@ -162,7 +165,7 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 срички, липсваща буква, с коя буква започва, чуй и избери картинка, прочети и
 избери картинка.
 
-**В гората** — 20 нива в шест сезона, страничен платформинг. Буки е рисуван
+**В гората** — 30 нива на девет места, страничен платформинг. Буки е рисуван
 на място: крачета в бяг, развяващ се шал, мигане и свиване при кацане.
 Златното перо дава седем секунди летене с четворен скок. Буки тича сам надясно, а
 детето има едно действие: докосване за скок, плюс втори скок във въздуха.
@@ -173,8 +176,9 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 Всяко ниво е малка поръчка. Горски приятел чака в началото с балонче какво му
 трябва и пак чака при портата: катеричка иска жълъди, птичка иска яйца, пчела
 иска цветя, мечок иска мед, дракон иска кристали, пингвин иска ледчета,
-снежко иска снежинки, бобър иска клечки — двайсет приятели, двайсет неща за
-събиране. Поръчките растат с нивата: от три жълъда до осемнайсет клечки.
+снежко иска снежинки, бобър иска клечки, мишле иска сирене, фея иска вълшебни
+кълба — трийсет приятели, трийсет неща за събиране. Поръчките растат с нивата:
+от три жълъда до двайсет и две кълба.
 
 Събереш ли ги, портата се отваря. Думата, която виси наоколо, е **бонус** —
 събереш ли я, взимаш още звезди; подминеш ли я, нивото пак свършва. Буквите
@@ -193,10 +197,11 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 Всички са по избор и дават бонус звезди, тоест дете, което ги подмине, пак
 завършва нивото.
 
-Сезоните се сменят с нивата: ливада, гора, есен, залез с ниско оранжево
-слънце, нощ със звезди и светулки и накрая зима — сняг по короните, преспи по
-земята, светъл лед във водните дупки. По-късните нива добавят площадки, които
-се движат нагоре-надолу.
+Мястото се сменя с нивата: ливада, гора, есен, залез с ниско оранжево слънце,
+нощ със звезди и светулки, зима със сняг по короните и светъл лед във водата,
+пролет с розов цвят, плаж с пясък и палми и накрая пещера — светещи кристални
+зъбери вместо дървета и само един лъч дневна светлина от тавана. По-късните
+нива добавят площадки, които се движат нагоре-надолу.
 Дупките с вода са премерени по дъгата на скока — всяка се прескача с един скок.
 
 **Лов на буквите** — 6 нива, 2D игра. Буки се движи долу, буквите падат
