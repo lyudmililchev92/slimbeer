@@ -1,7 +1,7 @@
 # SlimBeer
 
 A learning game for children aged roughly 4–7, in **Dutch and Bulgarian**.
-Reading, counting and letter writing — one HTML file, no build step, no
+Reading, counting, letter writing and a letter-catching game — one HTML file, no build step, no
 dependencies, no backend, works offline.
 
 **Play:** https://lyudmililchev92.github.io/slimbeer/
@@ -22,6 +22,11 @@ The game is called *Letterbeer* in Dutch and *Буквик* in Bulgarian.
 | First letter | Picks the letter a word starts with |
 | Listen and choose | Hears a word, picks the matching picture |
 | Read and choose | Reads a written word, picks the matching picture |
+
+**Letter hunt — 6 levels, one 2D game.** Boekie moves along the bottom,
+letters drift down, and the child catches the one the word needs next. No
+timer, no lives, no game over: a wrong catch just bounces, a missed letter
+comes back around.
 
 **Counting — 10 levels, 5 game types**: counting objects, addition,
 subtraction, number sequences, and comparing groups. Problems are generated
@@ -104,6 +109,10 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 **Четене** — 12 нива и 6 вида задачи: подреждане на буквите, подреждане на
 срички, липсваща буква, с коя буква започва, чуй и избери картинка, прочети и
 избери картинка.
+
+**Лов на буквите** — 6 нива, 2D игра. Буки се движи долу, буквите падат
+отгоре и детето хваща тази, която е наред. Без таймер, без животи и без край
+на играта: сгрешена буква само отскача, пропусната се връща по-късно.
 
 **Смятане** — 10 нива и 5 вида: броене, събиране, изваждане, редици и
 сравняване. Задачите се раждат от правилата на нивото, затова не се повтарят.

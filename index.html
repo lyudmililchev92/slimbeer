@@ -196,6 +196,35 @@ h1,h2,h3,p{margin:0}
 }
 .track-card:active{transform:translateY(3px) scale(.985);box-shadow:var(--sh-1)}
 .track-card.t-words{background:linear-gradient(180deg,#7D6FF0,var(--c-primary))}
+.track-card.t-catch{background:linear-gradient(180deg,#F2994A,#E07B39)}
+.stage-play.full{flex:1 1 auto;min-height:0;width:100%;justify-content:stretch}
+.stage-full .stage-visual{display:none}
+.stage-full .stage{flex-direction:column;gap:var(--s-3);align-items:stretch}
+.stage-full .stage-play{max-width:min(980px,100%);width:100%;margin:0 auto;flex:1 1 auto}
+.catch-head{display:flex;align-items:center;gap:var(--s-3);justify-content:center;flex:0 0 auto;flex-wrap:wrap}
+.catch-head .catch-pic{width:clamp(44px,8vmin,72px);height:clamp(44px,8vmin,72px);display:flex;align-items:center;justify-content:center}
+.catch-head .catch-pic svg{width:100%;height:100%}
+.catch-head .catch-pic .emoji{font-size:clamp(30px,6vmin,52px);line-height:1}
+.catch-slots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.catch-slot{
+  width:clamp(34px,7vmin,52px);height:clamp(34px,7vmin,52px);
+  border-radius:var(--r-sm);border:3px dashed #CFD4EA;background:rgba(255,255,255,.6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(17px,3.6vmin,26px);font-weight:var(--fw-bold);color:var(--c-ink);
+  transition:transform var(--t-fast) var(--ease), border-color var(--t-fast), background var(--t-fast);
+}
+.catch-slot.filled{background:linear-gradient(180deg,#EAFBF1,var(--c-success-soft));
+  border:3px solid var(--c-success);color:#1B7C4A;animation:snap-in var(--t-med) var(--ease-back)}
+.catch-slot.next{border-color:var(--c-primary);background:var(--c-primary-soft);
+  animation:target-pulse 1.5s var(--ease) infinite}
+.catch-wrap{
+  position:relative;flex:1 1 auto;width:100%;min-height:clamp(180px,34vh,420px);
+  margin-top:var(--s-3);border-radius:var(--r-lg);overflow:hidden;touch-action:none;
+  background:linear-gradient(180deg,#EAF2FF 0%,#F6F1FF 60%,#FFF3E8 100%);
+  box-shadow:inset 0 2px 10px rgba(42,42,69,.07);
+}
+.catch-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.catch-wrap.bump{animation:shake 300ms var(--ease)}
 .track-card.t-math{background:linear-gradient(180deg,#48C9B0,#2FA98A)}
 .track-icon{font-size:clamp(30px,5vh,42px);line-height:1}
 .track-name{font-size:clamp(18px,2.6vh,24px);font-weight:var(--fw-bold);letter-spacing:.5px}
@@ -849,7 +878,8 @@ const LANGS = {
       autoSpeak:"Woord vanzelf uitspreken",
       noSaveLabel:"Voortgang", noSaveText:"wordt hier niet bewaard — open het bestand in een browser-app", restartTrack:"Opnieuw beginnen", restartTitle:"Weer bij niveau 1 beginnen?",
       restartText:"De niveaus gaan terug naar het begin. Sterren en geleerde woorden blijven.",
-      trackWords:"LEZEN", trackMath:"REKENEN",
+      trackWords:"LEZEN", trackMath:"REKENEN", trackCatch:"LETTERJACHT",
+      hintFindLetter:"Zoek de letter",
       promptRead:"Welk plaatje hoort bij dit woord?",
       promptCount:"Hoeveel zie je?", promptAdd:"Hoeveel zijn het er samen?",
       promptSub:"Hoeveel blijven er over?", promptSequence:"Welk getal mist?",
@@ -924,7 +954,8 @@ const LANGS = {
       autoSpeak:"Сама да изговаря думата",
       noSaveLabel:"Прогрес", noSaveText:"тук не се запазва — отвори файла в приложение с браузър", restartTrack:"Започни отначало", restartTitle:"Да върнем ли на ниво 1?",
       restartText:"Нивата се връщат в началото. Звездите и научените думи остават.",
-      trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ",
+      trackWords:"ЧЕТЕНЕ", trackMath:"СМЯТАНЕ", trackCatch:"ЛОВ НА БУКВИ",
+      hintFindLetter:"Търси буквата",
       promptRead:"Коя картинка е думата?",
       promptCount:"Колко виждаш?", promptAdd:"Колко са заедно?",
       promptSub:"Колко остават?", promptSequence:"Кое число липсва?",
@@ -1283,7 +1314,7 @@ function defaultTrackProgress(){
 }
 /* Всеки език има отделен прогрес за всеки път на учене. */
 function defaultLangProgress(){
-  return { words: defaultTrackProgress(), math: defaultTrackProgress() };
+  return { words: defaultTrackProgress(), math: defaultTrackProgress(), catch: defaultTrackProgress() };
 }
 
 /* Прогресът по думи и нива е отделен за всеки език — ученето на
@@ -1301,7 +1332,7 @@ function defaultProgress(){
   };
 }
 
-const TRACK_IDS = ["words", "math"];
+const TRACK_IDS = ["words", "math", "catch"];
 
 const Store = {
   load(){
@@ -2385,6 +2416,259 @@ const MODE_COMPARE = {
   }
 };
 
+
+/* =========================================================================
+ * 8c. ЛОВ НА БУКВИТЕ — 2D игра с движение
+ * -------------------------------------------------------------------------
+ * Буки стои долу и се движи с пръст. Буквите падат бавно отгоре.
+ * Детето хваща тази, която е наред в думата.
+ *
+ * Нарочно няма таймер, животи и край на играта: сгрешена буква само
+ * отскача, пропусната се връща по-късно. Натискът е нула, ученето остава.
+ * ========================================================================= */
+const MODE_CATCH = {
+  id:"catch", showsPicture:false, fullArea:true,
+  supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 7; },
+
+  mount(root, host){
+    const word = host.word;
+    const letters = word.word.split("");
+    let need = 0, mistakes = 0, running = true, raf = 0;
+
+    /* ---- горна лента: картинка и местата за буквите ---- */
+    const head = h("div", { class:"catch-head" });
+    if(word.art || word.emoji) head.appendChild(renderArt(word, "catch-pic"));
+    const slotsEl = h("div", { class:"catch-slots" });
+    const slotEls = letters.map((ch, i) => {
+      const el = h("span", { class:"catch-slot" + (i === 0 ? " next" : "") }, "");
+      slotsEl.appendChild(el);
+      return el;
+    });
+    head.appendChild(slotsEl);
+    root.appendChild(head);
+
+    const wrap = h("div", { class:"catch-wrap" });
+    const canvas = h("canvas");
+    wrap.appendChild(canvas);
+    root.appendChild(wrap);
+
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0;
+
+    /* ---- Буки, нарисуван веднъж и после само местен ---- */
+    const hero = { x: 0.5, img: null, ready: false };
+    try{
+      const img = new Image();
+      img.onload = () => { hero.img = img; hero.ready = true; };
+      img.src = "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(mascotSVG().replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"'));
+    }catch(e){}
+
+    const drops = [];          // падащите букви
+    const sparks = [];         // искри при хващане
+    let spawnIn = 0;
+
+    const alphabet = L().alphabet;
+    const speed = REDUCED_MOTION ? 0.10 : 0.155;   // част от височината в секунда (~6 сек. пресичане)
+
+    function layout(){
+      const w = wrap.clientWidth, hgt = wrap.clientHeight;
+      if(!w || !hgt) return;
+      W = w; H = hgt;
+      canvas.width = w * dpr; canvas.height = hgt * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+
+    function spawn(){
+      // Гарантираме, че търсената буква е някъде на екрана.
+      const needed = letters[need];
+      const hasNeeded = drops.some(d => d.ch === needed);
+      let ch;
+      if(!hasNeeded || Math.random() < 0.35) ch = needed;
+      else ch = alphabet[Math.floor(Math.random() * alphabet.length)];
+      drops.push({
+        ch: ch,
+        x: 0.08 + Math.random() * 0.84,
+        y: -0.08,
+        wob: Math.random() * Math.PI * 2,
+        caught: false
+      });
+    }
+
+    function burst(x, y, good){
+      if(REDUCED_MOTION) return;
+      for(let i = 0; i < (good ? 14 : 6); i++){
+        sparks.push({ x, y, vx:(Math.random()-0.5)*0.5, vy:-Math.random()*0.5,
+                      life:1, good:good });
+      }
+    }
+
+    function caught(d){
+      if(d.ch === letters[need]){
+        slotEls[need].textContent = d.ch;
+        slotEls[need].classList.add("filled");
+        slotEls[need].classList.remove("next");
+        need++;
+        if(slotEls[need]) slotEls[need].classList.add("next");
+        Sfx.place();
+        burst(d.x, d.y, true);
+        if(need >= letters.length){
+          running = false;
+          setTimeout(() => host.correct(mistakes), 400);
+        }
+      } else {
+        mistakes++;
+        Sfx.wrong();
+        burst(d.x, d.y, false);
+        host.mistake();
+        wrap.classList.add("bump");
+        setTimeout(() => wrap.classList.remove("bump"), 300);
+      }
+      d.caught = true;
+    }
+
+    /* ---- рисуване ---- */
+    function draw(){
+      ctx.clearRect(0, 0, W, H);
+      const size = Math.max(46, Math.min(W * 0.11, H * 0.24, 92));
+
+      drops.forEach(d => {
+        const x = d.x * W, y = d.y * H;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.sin(d.wob) * 0.12);
+        const r = size * 0.22;
+        ctx.beginPath();
+        ctx.roundRect(-size/2, -size/2, size, size, r);
+        // сянка и плътен ръб — иначе бялата плочка се губи в светлия фон
+        ctx.shadowColor = "rgba(42,42,69,.22)";
+        ctx.shadowBlur = size * 0.18;
+        ctx.shadowOffsetY = size * 0.07;
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fill();
+        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+        ctx.strokeStyle = "#8E82E8";
+        ctx.lineWidth = Math.max(2.5, size * 0.055);
+        ctx.stroke();
+        ctx.fillStyle = "#5548C8";
+        ctx.font = "800 " + Math.round(size * 0.56) + "px " + getComputedStyle(document.body).fontFamily;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(d.ch, 0, size * 0.03);
+        ctx.restore();
+      });
+
+      sparks.forEach(s => {
+        ctx.globalAlpha = Math.max(0, s.life);
+        ctx.fillStyle = s.good ? "#2FBF71" : "#E9A0A8";
+        ctx.beginPath();
+        ctx.arc(s.x * W, s.y * H, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+
+      const hs = Math.max(64, Math.min(W * 0.16, H * 0.32, 130));
+      const hx = hero.x * W, hy = H - hs * 0.52;
+      if(hero.ready){
+        try{ ctx.drawImage(hero.img, hx - hs/2, hy - hs/2, hs, hs); }catch(e){}
+      } else {
+        ctx.fillStyle = "#7D6FF0";
+        ctx.beginPath(); ctx.arc(hx, hy, hs * 0.35, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    let last = 0;
+    function frame(now){
+      if(!running) return;
+      if(!W) layout();
+      const dt = Math.min(0.05, last ? (now - last) / 1000 : 0.016);
+      last = now;
+
+      spawnIn -= dt;
+      if(spawnIn <= 0 && drops.length < 6){ spawn(); spawnIn = 0.55 + Math.random() * 0.6; }
+
+      const hs = Math.max(64, Math.min(W * 0.16, H * 0.32, 130));
+      const catchY = 1 - (hs * 0.52) / H;
+
+      for(let i = drops.length - 1; i >= 0; i--){
+        const d = drops[i];
+        d.y += speed * dt;
+        d.wob += dt * 2;
+        if(!d.caught && d.y >= catchY - 0.05 && d.y <= catchY + 0.06 &&
+           Math.abs(d.x - hero.x) < (hs * 0.42) / W + 0.03){
+          caught(d);
+        }
+        if(d.y > 1.15 || d.caught) drops.splice(i, 1);
+      }
+      for(let i = sparks.length - 1; i >= 0; i--){
+        const s = sparks[i];
+        s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 1.2 * dt;
+        s.life -= dt * 1.6;
+        if(s.life <= 0) sparks.splice(i, 1);
+      }
+
+      draw();
+      raf = requestAnimationFrame(frame);
+    }
+
+    /* ---- управление: пръст, мишка, стрелки ---- */
+    function aim(ev){
+      const r = canvas.getBoundingClientRect();
+      hero.x = Math.max(0.06, Math.min(0.94, (ev.clientX - r.left) / r.width));
+    }
+    let dragging = false;
+    const onDown = (e) => { dragging = true; aim(e); };
+    const onMove = (e) => { if(dragging) aim(e); };
+    const onUp = () => { dragging = false; };
+    wrap.addEventListener("pointerdown", onDown);
+    wrap.addEventListener("pointermove", onMove);
+    wrap.addEventListener("pointerup", onUp);
+    wrap.addEventListener("pointercancel", onUp);
+    const onKey = (e) => {
+      if(e.key === "ArrowLeft")  hero.x = Math.max(0.06, hero.x - 0.06);
+      if(e.key === "ArrowRight") hero.x = Math.min(0.94, hero.x + 0.06);
+    };
+    window.addEventListener("keydown", onKey);
+    const onResize = () => layout();
+    window.addEventListener("resize", onResize);
+
+    setTimeout(() => { layout(); raf = requestAnimationFrame(frame); }, 0);
+    setTimeout(() => Speech.speak(word.display), 350);
+
+    return {
+      maxHints: 2,
+      hint(step){
+        if(step === 1){ Speech.speak(letters[need]); return t("hintFindLetter") + " " + letters[need]; }
+        // Втората подсказка сваля търсената буква право над Буки.
+        const d = drops.find(x => x.ch === letters[need]);
+        if(d){ d.x = hero.x; if(d.y < 0.30) d.y = 0.30; }
+        else drops.push({ ch: letters[need], x: hero.x, y: 0.30, wob: 0, caught: false });
+        return t("hintThisLetter");
+      },
+      destroy(){
+        running = false;
+        if(raf) cancelAnimationFrame(raf);
+        wrap.removeEventListener("pointerdown", onDown);
+        wrap.removeEventListener("pointermove", onMove);
+        wrap.removeEventListener("pointerup", onUp);
+        wrap.removeEventListener("pointercancel", onUp);
+        window.removeEventListener("keydown", onKey);
+        window.removeEventListener("resize", onResize);
+      }
+    };
+  }
+};
+
+const CATCH_LEVELS = [
+  { id:1, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:4, modes:["catch"] },
+  { id:2, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:5, modes:["catch"] },
+  { id:3, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, modes:["catch"] },
+  { id:4, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:6, modes:["catch"] },
+  { id:5, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, modes:["catch"] },
+  { id:6, minLen:6, maxLen:7, maxDifficulty:3, wordsToPass:7, modes:["catch"] }
+];
+
 const MATH_MODES = {};
 [MODE_COUNT, MODE_ADD, MODE_SUB, MODE_SEQUENCE, MODE_COMPARE].forEach(m => { MATH_MODES[m.id] = m; });
 
@@ -2397,6 +2681,14 @@ const TRACKS = {
     levels: () => LEVELS,
     pickItem: (level) => pickWord(level),
     pickMode: (level, item, force) => pickMode(level, item, force),
+    itemKey: (item) => item.word,
+    speak: (item) => item.display
+  },
+  catch: {
+    id:"catch", icon:"🕹️",
+    levels: () => CATCH_LEVELS,
+    pickItem: (level) => pickWord(level),
+    pickMode: () => MODE_CATCH,
     itemKey: (item) => item.word,
     speak: (item) => item.display
   },
@@ -2532,6 +2824,8 @@ const Play = {
 
     this.round = { item, word:item, mode, instance:null, mistakes:0, hintStep:0, tutorial:!!tutorial };
 
+    els.playArea.classList.toggle("full", !!mode.fullArea);
+    els.screen.classList.toggle("stage-full", !!mode.fullArea);
     if(mode.showsPicture) els.picHolder.appendChild(this.buildPicture(item));
 
     if(item.word){                // размер на плочките спрямо дължината на думата
@@ -2748,7 +3042,8 @@ const Screens = {
     };
     const tracks = h("div", { class:"track-row" },
       trackCard("words", "trackWords", "📖", "t-words"),
-      trackCard("math",  "trackMath",  "🔢", "t-math"));
+      trackCard("math",  "trackMath",  "🔢", "t-math"),
+      trackCard("catch", "trackCatch", "🕹️", "t-catch"));
     const playBtn = tracks.firstChild;
 
     const row = h("div", { class:"home-row" },
@@ -3048,7 +3343,7 @@ const Screens = {
         (() => {
           // Връща само нивата на този път — звездите и научените думи остават.
           const row = h("div", { class:"lang-row compact" });
-          [["words","trackWords","📖"],["math","trackMath","🔢"]].forEach(([tr, label, icon]) => {
+          [["words","trackWords","📖"],["math","trackMath","🔢"],["catch","trackCatch","🕹️"]].forEach(([tr, label, icon]) => {
             const b = h("button", { class:"lang-btn", type:"button" },
               h("span", { class:"flag" }, icon), t(label));
             b.addEventListener("click", () => {
