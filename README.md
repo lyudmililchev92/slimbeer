@@ -1,134 +1,145 @@
 # SlimBeer
 
-A learning game for children aged roughly 4–7, in **Dutch and Bulgarian**.
-Reading, counting, letter writing and a letter-catching game — one HTML file, no build step, no
-dependencies, no backend, works offline.
+A learning game for children roughly 4–7 years old, in **Dutch and Bulgarian**.
+Reading, sounds, stories, numbers, writing and a forest adventure. No dependencies,
+no backend, works offline.
 
 **Play:** https://lyudmililchev92.github.io/slimbeer/
 
-The game is called *Letterbeer* in Dutch and *Буквик* in Bulgarian.
+The game is called *Letterbeer* in Dutch and *Буквик* in Bulgarian; the owl is Boekie / Буки.
 
 ---
 
+## Who it is for
+
+A child who cannot read yet, holding a tablet, without an adult sitting next to them.
+Everything follows from that: icons instead of menus, every question spoken aloud,
+big tap targets, and no text a child must read to know what to do.
+
 ## What is in it
 
-**Reading — 12 levels, 6 game types**
+Five worlds on the home screen.
 
-| Game type | What the child does |
+### 📖 Words
+
+| Path | What the child does |
 |---|---|
-| Build the word | Drags or taps scrambled letters into place |
-| Syllables | Same, but with syllables instead of letters |
-| Missing letter | Picks the letter that completes the word |
-| First letter | Picks the letter a word starts with |
-| Listen and choose | Hears a word, picks the matching picture |
-| Read and choose | Reads a written word, picks the matching picture |
+| **Reading** — 12 levels, 6 task types | builds words from letters or syllables, finds the missing letter, the first letter, matches a spoken word to a picture, or a written word to a picture |
+| **Sounds** — 12 levels, 6 exercises | which word starts with this sound, which ends with it, which two start alike, which one does not belong, blends sounds into a word, recognises a word from its syllables |
+| **Stories** — 12 stories, 6 levels | reads 3 to 8 sentences, then answers what happened; every sentence has its own speaker button |
 
-**Forest — 30 levels across nine places, a side-scrolling platformer.** Boekie runs to the right
-on his own; the child's only control is a tap to jump, plus a second jump in
-mid-air. Letters float at jump height, so nothing is picked up by accident —
-every letter is a decision. Platforms to land on, bouncy mushrooms, and water
-gaps. Falling in costs nothing: a gust carries him across and he runs on.
+The two languages have **different** phonics progressions. Bulgarian spelling is
+nearly phonetic, so letter and sound line up. Dutch has `sch`, `ij`, `oe`, `eu`,
+`ui`, `ng` — one sound written with two or three letters — so those come only at
+level nine, after the plain single sounds.
 
-Every level is a small errand. A forest friend waits near the start with a
-speech bubble showing what they need, and waits again at the gate: a squirrel
-wants acorns, a bird wants eggs, a bee wants flowers, a bear wants honey, a
-dragon wants crystals, a penguin wants ice, a snowman wants snowflakes, a
-beaver wants sticks, a mouse wants cheese, a fairy wants magic orbs — thirty
-friends, thirty things to gather. The orders grow with the levels, from three
-acorns to twenty-two orbs.
+### 🌲 Adventure
 
-Finding them all opens the star-gate. The word floating around the level is a
-**bonus**: complete it and you get extra stars, skip it and the level still
-ends. Letters are the seasoning here, not the meal.
+**Forest** — 30 levels across nine places: meadow, forest, autumn, dusk, night,
+winter, spring blossom, beach, cave. Boekie runs right on his own; the child's only
+control is a tap to jump, plus a second jump in mid-air.
 
-From level three the forest holds **challenge spots**, marked by a wooden sign
-with three platforms below. Land on the right one:
+Every level is an errand from a forest friend: a squirrel wants acorns, a penguin
+wants ice, a fairy wants magic orbs. **The errand opens the gate, not the word.**
+Letters float at jump height and pay bonus stars, but never block the way.
 
-| Sign shows | The child works out |
-|---|---|
-| Seven acorns drawn on the board | how many — counting |
-| `4 + 4` | the sum |
-| The word's picture | the letter it starts with |
-| A colour | which of three berries matches |
+Optional challenge spots pay extra stars: count the acorns on the sign, solve `4 + 4`,
+pick the first letter of the pictured word, match a colour.
 
-All are optional and pay bonus stars, so a child who ignores them still
-finishes the level.
+**Friends** — all 30 friends become a collection. Each one you have met gets a card:
+where it lives, what it likes, its letter, and one true fact. Unmet friends show a
+question mark, not a padlock.
 
-The scenery changes as the levels go: meadow, forest, autumn, dusk with a low
-orange sun, night with stars and fireflies, winter with snow on the tree crowns
-and pale ice in the water gaps, spring with pink blossom, a beach of sand and
-palms, and finally a cave — glowing crystal spires instead of trees, lit only by
-a shaft of daylight from the ceiling. Later levels add
-platforms that drift up and down. Water
-gaps are sized from the actual jump arc, so every one of them can be cleared
-with a single jump.
+**Missions** — 18 small tasks for away from the screen: find something round, count
+five spoons together, make the letter T with your body. The device checks nothing —
+no camera, no microphone, no permissions. The child taps *Done*.
 
-**Letter hunt — 6 levels, one 2D game.** Boekie moves along the bottom,
-letters drift down, and the child catches the one the word needs next. No
-timer, no lives, no game over: a wrong catch just bounces, a missed letter
-comes back around.
+### 🔢 Numbers
 
-**Counting — 10 levels, 5 game types**: counting objects, addition,
-subtraction, number sequences, and comparing groups. Problems are generated
-from level rules, so they never repeat.
+**Counting and maths** — 15 levels, 9 task types: counting, addition, subtraction,
+number sequences, comparing groups, shapes, repeating patterns, matching a number to
+a quantity, and making a number (`5 + ? = 8`). Every problem is generated from the
+level's rules, so they never repeat.
 
-**Writing**: trace a letter with a finger, mouse or stylus. Ink turns purple
-inside the letter and pink outside, so the child sees immediately when the
-stroke leaves the shape. Both alphabets — 26 Latin letters and 30 Cyrillic.
+### ✏️ Letters
 
-**1012 words in Dutch and 1023 in Bulgarian**, across 27 categories. 611 of the
-Dutch ones have a picture; 401 more have no picture and are heard instead,
-which is what makes verbs, adjectives, weekdays and months possible at all.
-Picture-less words start appearing from level six, so the first levels stay
-anchored to a picture.
+The full alphabet — 30 Cyrillic and 26 Latin letters. Each letter has its sound,
+example words, and two ways to write it:
 
-The word list lives in its own file, `words.js`, so words can be added without
-touching the code. One line is one word:
+* **Free trace** — ink turns purple inside the letter and pink outside, so the child
+  sees when the stroke leaves the shape. Stroke order does not matter.
+* **Step by step** — every letter has ordered strokes with a start, a direction and an
+  end. A numbered dot shows where to begin and an arrow shows where to go. Writing
+  "А" from the bottom up no longer passes. The tolerance is deliberately generous:
+  a wobbly five-year-old hand still succeeds.
 
-    БЪЛ-ГАР-СКИ/NE-DER-LANDS 🖼
+### 🎮 Quick games
 
-The hyphens split the syllables, so a word and its syllables cannot drift
-apart — they are the same string. The last field is an emoji, `@name` for one
-of the hand-drawn illustrations, or `~` for a word that is heard instead of
-seen. The file explains the rest at the top.
+**Letter hunt** — 10 levels, one engine, six things to catch: the next letter of a
+word, a first letter, a *sound*, a syllable, a number, or the answer to a sum.
 
-Progress is kept separately per language and per subject. Stars are shared.
+**Memory, Sorting, Odd one out** — 10 levels using the same dictionary.
 
-## Design notes
+---
 
-The game avoids the usual engagement mechanics: no timers, no streak pressure,
-no lives, no shop, no currency, no ads, no accounts. A wrong answer shakes
-gently and can be retried at once. Hints never cost anything.
+## How it decides what to show
 
-Words are stored already split into syllables (`КО-ТЕ/POES @cat`), so the word
-and its syllables cannot drift apart — they are the same string. A validator
-checks that every syllable holds exactly one vowel.
+The game keeps a small skill model on the device: for each skill (`letter.bg.Ж.recognition`,
+`reading.bg.syllables`, `math.add.10`) how many times it was tried, how many succeeded,
+and how it has been going lately. Recent attempts weigh more, but older ones are not
+thrown away — two mistakes should not erase a week.
+
+Words containing weak letters then appear slightly more often. Measured over 40 000
+picks with a child who confuses Ж and З: **10.6% → 12.6%** of words contain those
+letters. Enough to help, not enough to feel like an interrogation.
+
+The child never sees a number. The parent screen says it in words.
+
+---
+
+## Design
+
+No timers. No lives. No streaks. No shop, no currency, no ads, no accounts, no
+leaderboards, no "come back tomorrow". A wrong answer wobbles gently and can be
+retried immediately. Hints are always free.
+
+Stars are not currency and cannot be spent — they are a trace of where the child has
+been, alongside friends found, places visited and words met.
+
+**Calm mode** turns off particles, shake and confetti while keeping the movement that
+*is* the game — Boekie still has to run. The system's `prefers-reduced-motion` is
+respected by default. Correctness is never signalled by colour alone: a correct answer
+also gets a check mark, a wrong one also moves.
 
 ## Privacy
 
 Nothing is collected. No analytics, no cookies, no accounts, no network calls.
 Progress lives in `localStorage` on the device and never leaves it.
 
-One honest caveat: the spoken words use the browser's speech synthesis. The
-game prefers a voice that runs on the device, but if the only voice available
-for a language is a server-side one, the word is sent to that service by the
-browser. The parent screen shows which voice is in use.
+One honest caveat: spoken words use the browser's speech synthesis. The game prefers a
+voice that runs on the device, but if the only voice available for a language is a
+server-side one, the word is sent to that service by the browser — not by the game.
+The parent screen shows which voice is in use and whether it is local.
 
-## Files
+---
 
-| File | What it is |
-|---|---|
-| `index.html` | the shell — a handful of tags |
-| `styles.css` | all the styling |
-| `words.js` | the word list — add words here |
-| `game.js` | everything else: screens, game modes, levels |
-| `sw.js` | offline caching, only used over HTTPS |
-| `build.py` | glues the three into one file |
+## Content
 
-Nothing is compiled and nothing is installed. `python3 build.py --single`
-produces `letterbeer.html`, a single self-contained file you can send to a
-phone; `python3 build.py` produces the trimmed variant used for hosting inside
-another page.
+**1023 words in Bulgarian and 1012 in Dutch**, across 27 categories. 622 of the
+Bulgarian ones have a picture; 401 more have no picture and are heard instead, which is
+what makes verbs, adjectives, weekdays and months possible. Picture-less words start at
+level six, so the first levels stay anchored to a picture.
+
+This repository contains **no emoji artwork**. The word list stores Unicode code points;
+the pictures are drawn by the font on your own device — Apple, Google, Microsoft and
+others each draw them differently. That artwork belongs to those vendors and is not
+covered by this licence, which is also why there are no screenshots here.
+
+Twelve illustrations (cat, fish, sun, house, apple, ball, car, tree, flower, moon,
+cloud, boat), the shapes and the mascot are hand-written inline SVG and are covered by
+the licence below. No fonts are bundled.
+
+---
 
 ## Running it
 
@@ -141,22 +152,75 @@ python3 -m http.server 8000 --bind 0.0.0.0
 # then open http://<your-ip>:8000 on the phone
 ```
 
-Serving it over HTTPS additionally registers a service worker, so after the
-first visit the game works with no connection at all.
+Serving it over HTTPS additionally registers a service worker, so after the first visit
+the game works with no connection at all.
 
-## About the pictures
+`dist/buki.html` is a single self-contained file with everything inside. Send it by
+email or AirDrop, double-click it, and it plays — no server, no service worker, no
+network.
 
-This repository contains **no emoji artwork**. The word list stores Unicode
-code points; the pictures you see are drawn by the font on your own device —
-Apple, Google, Microsoft and others each draw them differently. That artwork
-belongs to those vendors and is not covered by this licence, which is also why
-there are no screenshots here.
+## Building
 
-Twelve illustrations (cat, fish, sun, house, apple, ball, car, tree, flower,
-moon, cloud, boat) and the mascot are hand-written inline SVG and are covered
-by the licence below.
+```sh
+python3 build.py          # app.js, styles.css and dist/buki.html
+python3 build.py --check  # validate the content only
+```
 
-No fonts are bundled; the game uses whatever rounded system font is available.
+The source lives in `src/` and `styles/`; `build.py` concatenates them in an explicit
+order and wraps everything in one IIFE.
+
+**There are no ES modules on purpose.** Modules are fetched under CORS rules and
+browsers refuse them over `file://` — that would break "double-click and play". So the
+source files are plain scripts sharing one scope, and the build enforces two things
+that a shared scope makes easy to get wrong:
+
+* **name clashes** — two files declaring the same top-level name would silently
+  shadow each other. The build fails and names both files.
+* **broken content** — a malformed word, a syllable without a vowel, a duplicate
+  picture, a letter outside the alphabet. The build fails and points at the entry.
+
+The build prints what it made:
+
+```
+Буки — сглобяването е готово
+
+  думи            1023 bg / 1012 nl в 27 категории
+  нива            четене 12 · смятане 15 · лов 10 · гора 30
+  гората          30 приятели, 9 места
+  счупени връзки  0
+```
+
+## Tests
+
+```sh
+node tools/test.js
+```
+
+100 checks, no dependencies. They execute the real source files in a bare context, so
+what is tested is the code that actually runs. Among other things they verify that
+every stroke of all 56 letters can actually be completed, that no forest level can
+generate a gap wider than the jump, that 9000 generated maths problems never produce an
+invalid answer, and that old saves survive migration.
+
+## Files
+
+| Path | What it is |
+|---|---|
+| `index.html`, `sw.js` | the shell and the offline cache |
+| `src/core/` | state, storage, audio, speech, routing, the skill model |
+| `src/data/` | words, languages, levels, friends, stories, strokes, missions |
+| `src/games/` | reading, phonics, stories, forest, maths, letter hunt, writing, quick games |
+| `src/screens/` | home, worlds, play, letters, writing, friends, missions, stars, parents |
+| `styles/` | tokens, base, components, screens, games, cards, responsive, accessibility |
+| `build.py` | concatenates, validates, reports |
+| `tools/test.js` | the tests |
+| `app.js`, `styles.css`, `dist/` | **generated — do not edit** |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Adding a word is one line. Adding a story is one
+object. Adding a forest level is one line of data. None of them require touching the
+engine.
 
 ## Licence
 
@@ -166,106 +230,94 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 
 # SlimBeer (на български)
 
-Образователна игра за деца на 4–7 години, на **нидерландски и български**.
-Четене, смятане и писане на букви. Един HTML файл, без инсталация, работи и
-офлайн.
+Образователна игра за деца на около 4–7 години, на **нидерландски и български**.
+Четене, звукове, разказчета, смятане, писане и приключение в гората. Без инсталация,
+без зависимости, работи офлайн.
 
 **Играй:** https://lyudmililchev92.github.io/slimbeer/
 
+## За кого е
+
+За дете, което още не чете, с таблет в ръце и без възрастен до себе си. Оттам следва
+всичко останало: икони вместо менюта, всеки въпрос се изговаря, големи бутони и нито
+един текст, който детето трябва да прочете, за да разбере какво да прави.
+
 ## Какво има вътре
 
-**Четене** — 12 нива и 6 вида задачи: подреждане на буквите, подреждане на
-срички, липсваща буква, с коя буква започва, чуй и избери картинка, прочети и
-избери картинка.
+Пет свята на началния екран.
 
-**В гората** — 30 нива на девет места, страничен платформинг. Буки е рисуван
-на място: крачета в бяг, развяващ се шал, мигане и свиване при кацане.
-Златното перо дава седем секунди летене с четворен скок. Буки тича сам надясно, а
-детето има едно действие: докосване за скок, плюс втори скок във въздуха.
-Буквите висят на височина за скок, тоест нищо не се взима случайно — всяка
-буква е избор. Има площадки, гъби-пружини и водни дупки. Падането не струва
-нищо: полъх го пренася отвъд и продължава.
+**📖 Думи** — Четене (12 нива, 6 вида задачи), Звукове (12 нива, 6 упражнения от
+разпознаване на звук до сливане в дума) и Разказчета (12 разказчета в 6 нива, от три
+до осем изречения, всяко със свой високоговорител).
 
-Всяко ниво е малка поръчка. Горски приятел чака в началото с балонче какво му
-трябва и пак чака при портата: катеричка иска жълъди, птичка иска яйца, пчела
-иска цветя, мечок иска мед, дракон иска кристали, пингвин иска ледчета,
-снежко иска снежинки, бобър иска клечки, мишле иска сирене, фея иска вълшебни
-кълба — трийсет приятели, трийсет неща за събиране. Поръчките растат с нивата:
-от три жълъда до двайсет и две кълба.
+Прогресията по звукове е **различна** за двата езика. Българското писане е почти
+фонетично, а нидерландският има sch, ij, oe, eu, ui, ng — един звук от две-три букви —
+затова там двойките идват чак на девето ниво.
 
-Събереш ли ги, портата се отваря. Думата, която виси наоколо, е **бонус** —
-събереш ли я, взимаш още звезди; подминеш ли я, нивото пак свършва. Буквите
-тук са подправката, не ястието.
+**🌲 Приключение** — Гората (30 нива на девет места), колекцията с 30-те приятеля и
+18 задачки за извън екрана. Поръчката отваря портата, не думата: буквите носят звезди,
+но никога не препречват пътя.
 
-От трето ниво се появяват **предизвикателства** — дървена табела и три
-площадки под нея. Стъпва се на вярната:
+**🔢 Числа** — 15 нива и 9 вида: броене, събиране, изваждане, редици, сравняване,
+форми, повтарящи се шарки, число↔количество и „как се прави 8".
 
-| На табелата | Детето решава |
-|---|---|
-| Седем нарисувани жълъда | колко са — броене |
-| `4 + 4` | сметката |
-| Картинката на думата | с коя буква започва |
-| Цвят | кой от трите плода е същият |
+**✏️ Букви** — цялата азбука, 30 кирилски и 26 латински, с два начина на писане:
+свободно рисуване и стъпка по стъпка с ред, посока, начало и край на всеки щрих.
 
-Всички са по избор и дават бонус звезди, тоест дете, което ги подмине, пак
-завършва нивото.
+**🎮 Игрички** — Лов на буквите (10 нива, шест неща за хващане, включително звук и
+отговор на сметка), Памет, Сортиране и „Кое не е на място".
 
-Мястото се сменя с нивата: ливада, гора, есен, залез с ниско оранжево слънце,
-нощ със звезди и светулки, зима със сняг по короните и светъл лед във водата,
-пролет с розов цвят, плаж с пясък и палми и накрая пещера — светещи кристални
-зъбери вместо дървета и само един лъч дневна светлина от тавана. По-късните
-нива добавят площадки, които се движат нагоре-надолу.
-Дупките с вода са премерени по дъгата на скока — всяка се прескача с един скок.
+## Как решава какво да покаже
 
-**Лов на буквите** — 6 нива, 2D игра. Буки се движи долу, буквите падат
-отгоре и детето хваща тази, която е наред. Без таймер, без животи и без край
-на играта: сгрешена буква само отскача, пропусната се връща по-късно.
-
-**Смятане** — 10 нива и 5 вида: броене, събиране, изваждане, редици и
-сравняване. Задачите се раждат от правилата на нивото, затова не се повтарят.
-
-**Писане** — детето проследява буквата с пръст. Мастилото е лилаво в буквата и
-розово извън нея, така че веднага вижда, когато излезе. И двете азбуки.
-
-**1023 думи на български и 1012 на нидерландски**, в 27 категории. 622 от
-българските са с картинка, а още 401 се чуват вместо да се виждат — това
-позволява глаголи, прилагателни, дни от седмицата и месеци, за които картинка
-няма. Думите без картинка тръгват от шесто ниво, за да останат първите нива
-с картинка.
-
-Речникът е в свой файл, `words.js`, за да се добавят думи, без да се пипа
-кодът. Един ред е една дума:
-
-    БЪЛ-ГАР-СКИ/NE-DER-LANDS 🖼
-
-Тиретата делят сричките, тоест думата и сричките ѝ не могат да се разминат —
-те са един и същ надпис. Накрая стои емоджи, `@име` за ръчно рисувана
-илюстрация или `~` за дума, която се чува вместо да се вижда. Останалото е
-обяснено в началото на файла.
-
-Прогресът е отделен за всеки език и за всеки предмет. Звездите са общи.
+Играта пази малък модел на уменията на самото устройство. Слабото излиза малко
+по-често. Премерено върху 40 000 тегления с дете, което бърка Ж и З: **10.6% → 12.6%**.
+Достатъчно да помогне, недостатъчно да заприлича на разпит. Детето никога не вижда
+число — родителят го чете с думи.
 
 ## Подход
 
-Без таймери, без животи, без серии, без магазин, без реклами, без регистрация.
-Грешката само поклаща буквата и детето опитва пак веднага. Подсказките не
-струват нищо.
+Без таймери, без животи, без серии, без магазин, без реклами, без регистрация, без
+класации. Грешката само поклаща и детето опитва пак веднага. Подсказките не струват
+нищо. Звездите не са валута и не се харчат.
+
+Спокойният режим спира украсата, но не и движението, което е самата игра. Вярното
+никога не се показва само с цвят — има и знак.
 
 ## Поверителност
 
 Нищо не се събира. Прогресът стои в браузъра на устройството.
 
-Едно уточнение: изговорът минава през синтезатора на браузъра. Играта
-предпочита глас, който работи на самото устройство, но ако единственият
-наличен глас за езика е сървърен, думата отива до тази услуга. В екрана за
-родители пише кой глас се използва.
+Едно уточнение: изговорът минава през синтезатора на браузъра. Играта предпочита глас,
+който работи на самото устройство, но ако единственият за езика е сървърен, думата
+отива до тази услуга — от браузъра, не от играта. В екрана за родители пише кой глас
+се използва и дали е местен.
 
-## Картинките
+## Съдържание
 
-Тук няма emoji изображения — пазят се само кодовите точки, а рисунките идват
-от шрифта на устройството и принадлежат на Apple, Google и другите. Затова
-няма и екранни снимки. Дванайсетте рисувани илюстрации и маскотът са ръчно
-писан SVG и се покриват от лиценза.
+**1023 думи на български и 1012 на нидерландски**, в 27 категории. 622 от българските
+са с картинка, а още 401 се чуват вместо да се виждат. Тук няма emoji изображения —
+пазят се само кодовите точки, а рисунките идват от шрифта на устройството.
+
+## Пускане и сглобяване
+
+Отваряш `index.html`. За телефон в същата мрежа: `python3 -m http.server 8000 --bind 0.0.0.0`.
+
+`dist/buki.html` е един самостоятелен файл — пращаш го и се отваря с двоен клик.
+
+```sh
+python3 build.py          # сглобява
+python3 build.py --check  # само проверява съдържанието
+node tools/test.js        # 100 проверки
+```
+
+Няма ES модули нарочно: браузърът ги отказва при `file://`, а изискването е играта да
+се отваря с двоен клик.
+
+## Принос
+
+Виж [CONTRIBUTING.md](CONTRIBUTING.md). Добавянето на дума е един ред. На разказче —
+един обект. На ниво в гората — един ред данни. Нито едно от трите не иска пипане на
+кода.
 
 ## Лиценз
 

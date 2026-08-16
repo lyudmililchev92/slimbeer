@@ -27,6 +27,13 @@ Screens.parents = function(){
     body.appendChild(h("h2", { class:"section-head" }, t("skillsHead")));
     body.appendChild(h("div", { class:"card skills-card" }, skillSummary()));
 
+    /* Спокоен режим и по-едър шрифт. И двете са за средата, не за детето. */
+    body.appendChild(h("h2", { class:"section-head" }, t("comfortHead")));
+    const comfort = h("div", { class:"card" });
+    comfort.appendChild(settingRow("calmMode", "reduceMotion", () => applyCalmMode()));
+    comfort.appendChild(settingRow("bigText", "bigText", () => applyBigText()));
+    body.appendChild(comfort);
+
     /* Днес: с какво се е занимавало. Кратко и без история назад. */
     body.appendChild(h("h2", { class:"section-head" }, t("todayHead")));
     body.appendChild(h("div", { class:"card skills-card" }, todaySummary()));
@@ -258,6 +265,21 @@ Screens.parents = function(){
         row.addEventListener("click", () => { Sfx.tap(); Speech.speak(text); });
         return row;
       });
+    }
+
+    /* Ред с превключвател. Настройките живеят в p.settings. */
+    function settingRow(labelKey, key, after){
+      const st = p.settings || (p.settings = {});
+      const tg = h("button", { class:"toggle", type:"button", role:"switch",
+                               "aria-checked": String(!!st[key]), "aria-label": t(labelKey) });
+      tg.addEventListener("click", () => {
+        st[key] = !st[key];
+        tg.setAttribute("aria-checked", String(!!st[key]));
+        Sfx.tap();
+        Store.save();
+        if(after) after();
+      });
+      return h("div", { class:"setting-row" }, h("span", { class:"lbl" }, t(labelKey)), tg);
     }
 
     function stat(num, lbl){

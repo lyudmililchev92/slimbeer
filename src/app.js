@@ -50,6 +50,8 @@ function installAppIcon(){
 
 function init(){
   State.progress = Store.load();
+  applyCalmMode();
+  applyBigText();
   installAppIcon();
   canShowImage = createEmojiProbe();
   rebuildWords();

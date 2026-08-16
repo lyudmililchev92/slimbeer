@@ -13,5 +13,22 @@ const CONFIG = {
   nextDelay: 1100                    // пауза преди бутона "Следваща"
 };
 
-const REDUCED_MOTION = window.matchMedia &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* Системното предпочитание се уважава по подразбиране, но родителят може
+   да включи спокойния режим и без него — някои деца се разсейват от
+   движение, което операционната система не знае за тях. */
+const SYSTEM_REDUCED_MOTION = !!(window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+let REDUCED_MOTION = SYSTEM_REDUCED_MOTION;
+
+function applyCalmMode(){
+  REDUCED_MOTION = SYSTEM_REDUCED_MOTION ||
+    !!(State.progress && State.progress.settings && State.progress.settings.reduceMotion);
+  document.documentElement.classList.toggle("calm", REDUCED_MOTION);
+}
+
+/* По-едър шрифт за деца, които още не различават дребното. Мащабира
+   всичко наведнъж, защото размерите идват от токени. */
+function applyBigText(){
+  const on = !!(State.progress && State.progress.settings && State.progress.settings.bigText);
+  document.documentElement.classList.toggle("big-text", on);
+}

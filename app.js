@@ -403,8 +403,25 @@ const CONFIG = {
   nextDelay: 1100                    // пауза преди бутона "Следваща"
 };
 
-const REDUCED_MOTION = window.matchMedia &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* Системното предпочитание се уважава по подразбиране, но родителят може
+   да включи спокойния режим и без него — някои деца се разсейват от
+   движение, което операционната система не знае за тях. */
+const SYSTEM_REDUCED_MOTION = !!(window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+let REDUCED_MOTION = SYSTEM_REDUCED_MOTION;
+
+function applyCalmMode(){
+  REDUCED_MOTION = SYSTEM_REDUCED_MOTION ||
+    !!(State.progress && State.progress.settings && State.progress.settings.reduceMotion);
+  document.documentElement.classList.toggle("calm", REDUCED_MOTION);
+}
+
+/* По-едър шрифт за деца, които още не различават дребното. Мащабира
+   всичко наведнъж, защото размерите идват от токени. */
+function applyBigText(){
+  const on = !!(State.progress && State.progress.settings && State.progress.settings.bigText);
+  document.documentElement.classList.toggle("big-text", on);
+}
 
 /* ==== src/core/art.js ==== */
 /* =========================================================================
@@ -625,7 +642,8 @@ const LANGS = {
       hintListenAgain:"Luister nog eens.", hintFound:"Hier is hij!",
       learnLetter:"Leer de letter", listen:"Luister", write:"Schrijven",
       startsWith:"Beginnen met", containsLetter:"Met deze letter erin",
-      letterLater:"Deze letter komt later.", softSign:"",
+      letterLater:"Deze letter komt later.",
+      softSign:"",   // нарочно празно: нидерландският няма ер малък
       writeTitle:"Schrijf", traceHint:"Trek de letter na met je vinger",
       traceOutside:"Je gaat buiten de letter. Probeer nog eens!",
       traceIncomplete:"Trek de hele letter na. Probeer nog eens!",
@@ -637,6 +655,7 @@ const LANGS = {
       statLetters:"letters gezien", statSums:"sommen gemaakt", statMathLevel:"rekenniveau", settingsHead:"Instellingen",
       todayHead:"Vandaag", todayNone:"Vandaag nog niet gespeeld.",
       holdToConfirm:"Ingedrukt houden",
+      comfortHead:"Rustig kijken", calmMode:"Minder beweging", bigText:"Grotere letters",
       offscreenHead:"Samen zonder scherm",
       ideaLetter:"Zoek samen drie dingen in huis die met {L} beginnen.",
       ideaCount:"Tel samen de lepels of de traptreden.",
@@ -752,6 +771,7 @@ const LANGS = {
       statLetters:"срещнати букви", statSums:"решени сметки", statMathLevel:"ниво по смятане", settingsHead:"Настройки",
       todayHead:"Днес", todayNone:"Днес още не е играло.",
       holdToConfirm:"Задръж натиснато",
+      comfortHead:"Спокойно гледане", calmMode:"По-малко движение", bigText:"По-едри букви",
       offscreenHead:"Заедно, без екран",
       ideaLetter:"Потърсете вкъщи три неща, които започват с {L}.",
       ideaCount:"Пребройте заедно лъжиците или стъпалата.",
@@ -953,6 +973,8 @@ function defaultProgress(){
     discoveries: { friends: {}, biomes: {}, missions: {} },
     // v6: с какво се е занимавало детето последните дни. Само брой, само 7 дни.
     activity: {},
+    // v6: настройки, които не са за детето, а за средата му
+    settings: { reduceMotion: false, bigText: false },
     byLang: { nl: defaultLangProgress(), bg: defaultLangProgress() }
   };
 }
@@ -1009,6 +1031,9 @@ const Store = {
     if(!out.discoveries.biomes || typeof out.discoveries.biomes !== "object") out.discoveries.biomes = {};
     if(!out.discoveries.missions || typeof out.discoveries.missions !== "object") out.discoveries.missions = {};
     if(!out.activity || typeof out.activity !== "object") out.activity = {};
+    if(!out.settings || typeof out.settings !== "object") out.settings = {};
+    out.settings.reduceMotion = !!out.settings.reduceMotion;
+    out.settings.bigText = !!out.settings.bigText;
     for(const id in out.mastery){
       const r = out.mastery[id];
       if(!r || typeof r !== "object" || typeof r.attempts !== "number" || !Array.isArray(r.recent)){
@@ -6385,6 +6410,13 @@ Screens.parents = function(){
     body.appendChild(h("h2", { class:"section-head" }, t("skillsHead")));
     body.appendChild(h("div", { class:"card skills-card" }, skillSummary()));
 
+    /* Спокоен режим и по-едър шрифт. И двете са за средата, не за детето. */
+    body.appendChild(h("h2", { class:"section-head" }, t("comfortHead")));
+    const comfort = h("div", { class:"card" });
+    comfort.appendChild(settingRow("calmMode", "reduceMotion", () => applyCalmMode()));
+    comfort.appendChild(settingRow("bigText", "bigText", () => applyBigText()));
+    body.appendChild(comfort);
+
     /* Днес: с какво се е занимавало. Кратко и без история назад. */
     body.appendChild(h("h2", { class:"section-head" }, t("todayHead")));
     body.appendChild(h("div", { class:"card skills-card" }, todaySummary()));
@@ -6616,6 +6648,21 @@ Screens.parents = function(){
         row.addEventListener("click", () => { Sfx.tap(); Speech.speak(text); });
         return row;
       });
+    }
+
+    /* Ред с превключвател. Настройките живеят в p.settings. */
+    function settingRow(labelKey, key, after){
+      const st = p.settings || (p.settings = {});
+      const tg = h("button", { class:"toggle", type:"button", role:"switch",
+                               "aria-checked": String(!!st[key]), "aria-label": t(labelKey) });
+      tg.addEventListener("click", () => {
+        st[key] = !st[key];
+        tg.setAttribute("aria-checked", String(!!st[key]));
+        Sfx.tap();
+        Store.save();
+        if(after) after();
+      });
+      return h("div", { class:"setting-row" }, h("span", { class:"lbl" }, t(labelKey)), tg);
     }
 
     function stat(num, lbl){
@@ -7450,6 +7497,8 @@ function installAppIcon(){
 
 function init(){
   State.progress = Store.load();
+  applyCalmMode();
+  applyBigText();
   installAppIcon();
   canShowImage = createEmojiProbe();
   rebuildWords();

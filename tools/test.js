@@ -758,6 +758,36 @@ group("Бързи игри");
 })();
 
 /* ==================================================================== */
+group("Преводите");
+
+(function(){
+  const nl = api.LANGS.nl.ui, bg = api.LANGS.bg.ui;
+  const missingBg = Object.keys(nl).filter(k => !(k in bg));
+  const missingNl = Object.keys(bg).filter(k => !(k in nl));
+  ok("нищо не липсва на български", missingBg.length === 0, missingBg.slice(0, 6).join(" "));
+  ok("нищо не липсва на нидерландски", missingNl.length === 0, missingNl.slice(0, 6).join(" "));
+  // Нарочно празни: понятието не съществува на другия език.
+  // Кодът пада обратно към общ текст, виж screens/letters.js.
+  const DELIBERATELY_EMPTY = ["softSign"];
+  const empty = Object.keys(nl)
+    .filter(k => DELIBERATELY_EMPTY.indexOf(k) < 0)
+    .filter(k => !String(nl[k]).trim() || !String(bg[k]).trim());
+  ok("няма празен превод освен изрично позволените", empty.length === 0, empty.slice(0, 6).join(" "));
+
+  // всеки ключ, ползван в кода, трябва да съществува
+  const used = new Set();
+  const files = fs.readdirSync(path.join(ROOT, "src"), { recursive: true })
+    .filter(f => String(f).endsWith(".js"));
+  files.forEach(f => {
+    const src = fs.readFileSync(path.join(ROOT, "src", String(f)), "utf8");
+    for(const m of src.matchAll(/\bt\("([\w]+)"\)/g)) used.add(m[1]);
+  });
+  const unknown = [...used].filter(k => !(k in bg));
+  ok(used.size + " ключа в кода и всичките имат превод", unknown.length === 0,
+     unknown.slice(0, 6).join(" "));
+})();
+
+/* ==================================================================== */
 group("Речникът — построяване");
 
 (function(){

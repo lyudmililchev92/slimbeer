@@ -100,6 +100,7 @@ STYLES = [
     "styles/games.css",
     "styles/cards.css",
     "styles/responsive.css",
+    "styles/accessibility.css",
 ]
 
 BANNER = "/* Генериран файл — не го редактирай. Източникът е в {}/ */\n"

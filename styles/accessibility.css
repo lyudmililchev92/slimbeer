@@ -1,0 +1,47 @@
+/* =========================================================================
+ * ДОСТЪПНОСТ
+ * -------------------------------------------------------------------------
+ * Спокоен режим и по-едър шрифт. И двете се включват от екрана за
+ * родители и се уважават навсякъде, защото размерите и движенията идват
+ * от токени, не са разпръснати по компонентите.
+ * ========================================================================= */
+
+/* Спокоен режим: спира украсата, но не и движението, което е самата игра.
+   Буки в гората трябва да тича — иначе няма игра. Спират се частиците,
+   тръскането, конфетите и преходите. */
+html.calm *,
+html.calm *::before,
+html.calm *::after{
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+}
+html.calm .bg-deco{ display:none }
+html.calm .confetti{ display:none }
+
+/* По-едри букви: един множител върху размерите, защото всички размери
+   идват от clamp() върху vmin — увеличаваме базата. */
+html.big-text{ font-size:120% }
+html.big-text .tile,
+html.big-text .slot,
+html.big-text .opt-letter{ font-size:1.08em }
+
+/* Никога само цвят. Верният отговор носи и знак, грешният — и движение.
+   Дете, което не различава зелено от червено, пак разбира какво стана. */
+.opt-pic.right::after,
+.opt-letter.right::after,
+.opt-word.right::after,
+.opt-shape.right::after,
+.opt-icon.right::after,
+.opt-group.right::after{
+  content:"✓";
+  position:absolute; right:6px; top:4px;
+  font-size:.72em; font-weight:900; color:#1E7A46
+}
+.opt-pic, .opt-letter, .opt-word, .opt-shape, .opt-icon, .opt-group{ position:relative }
+
+/* Само за екранни четци: текст, който не се вижда, но се чува. */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0
+}
