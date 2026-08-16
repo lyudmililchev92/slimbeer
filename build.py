@@ -219,9 +219,14 @@ def content_report():
     levels = read("src/data/levels.js")
     n["forest"] = len(re.findall(r"\{ id:\d+,\s*theme:", levels))
     n["catch"] = len(re.findall(r"id:\d+,\s+minLen", levels))
-    world = read("src/data/forest-world.js")
-    n["friends"] = len(re.findall(r"who:", world))
-    n["biomes"] = len(re.findall(r"sky1:", world))
+    n["friends"] = len(re.findall(r"who:", read("src/data/forest-friends.js")))
+    n["biomes"] = len(re.findall(r"sky1:", read("src/data/forest-world.js")))
+    n["phonics"] = len(re.findall(r"\{ id:\d+", read("src/data/phonics-bg.js")))
+    n["stories"] = len(re.findall(r"^    id: \"", read("src/data/stories-bg.js"), re.M))
+    n["quick"] = len(re.findall(r"\{ id:\d+", read("src/games/quick/quick.js")))
+    n["missions"] = len(re.findall(r"\{ id:", read("src/data/missions.js")))
+    n["strokes"] = (len(re.findall(r"^  \"?\w+\"?: \[", read("src/data/strokes-latin.js"), re.M)) +
+                    len(re.findall(r"^  \"?[^\":]+\"?: \[", read("src/data/strokes-cyrillic.js"), re.M)))
     return n, errors
 
 
@@ -277,9 +282,13 @@ def main():
     print("Буки — сглобяването е готово\n")
     print("  думи            %d bg / %d nl в %d категории" % (n["bg"], n["nl"], n["categories"]))
     print("  от тях          %d с картинка, %d само звук" % (n["pic"], n["audio"]))
-    print("  нива            четене %d · смятане %d · лов %d · гора %d"
-          % (n["reading"], n["math"], n["catch"], n["forest"]))
+    print("  нива            четене %d · звукове %d · разказчета %d · смятане %d"
+          % (n["reading"], n["phonics"], n["stories"], n["math"]))
+    print("                  гора %d · лов %d · игрички %d"
+          % (n["forest"], n["catch"], n["quick"]))
     print("  гората          %d приятели, %d места" % (n["friends"], n["biomes"]))
+    print("  писане          %d букви с щрихове" % n["strokes"])
+    print("  задачки         %d извън екрана" % n["missions"])
     print("  счупени връзки  0")
     print("\n  изходни файлове %d js, %d css" % (len(SOURCES), len(STYLES)))
     print("  app.js          %s байта" % f"{len(js.encode()):,}")
