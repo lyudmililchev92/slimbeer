@@ -8613,10 +8613,6 @@ function init(){
       /* Нов worker поема управлението само когато сглобяването е ново.
          Тогава презареждаме веднъж, за да не играе детето вчерашната
          версия. Пазим се от цикъл с флаг. */
-      navigator.serviceWorker.addEventListener("message", (e) => {
-        if(e.data && e.data.type === "cache-failed")
-          console.warn("Офлайн кешът не се напълни:", e.data.message);
-      });
       let reloading = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if(reloading) return;
