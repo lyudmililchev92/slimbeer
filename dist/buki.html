@@ -601,6 +601,45 @@ h1,h2,h3,p{margin:0}
 .opt-word.right{ background:#DDF6E6; color:#1E7A46; box-shadow:0 0 0 4px #9BE0BC inset }
 @media (prefers-reduced-motion: reduce){ .story-line{ transition:none } }
 
+/* --- усет за числа -------------------------------------------------- */
+.shape-target svg{ width:clamp(88px,18vmin,150px); height:auto }
+.opt-shape{
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  min-width:var(--touch,64px); min-height:var(--touch,64px);
+  padding:clamp(8px,1.6vmin,14px); border:none;
+  border-radius:var(--r-md,18px); background:#FFF;
+  box-shadow:0 3px 12px rgba(42,42,69,.10)
+}
+.opt-shape svg{ width:clamp(44px,9vmin,76px); height:auto }
+.opt-shape.right{ box-shadow:0 0 0 4px #9BE0BC inset; background:#DDF6E6 }
+
+.pattern-row{ display:flex; align-items:center; gap:clamp(4px,1.2vmin,10px); flex-wrap:wrap; justify-content:center }
+.pattern-cell{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:clamp(38px,7.5vmin,62px); height:clamp(38px,7.5vmin,62px);
+  border-radius:var(--r-sm,12px); background:#FFF; font-size:clamp(22px,4.6vmin,38px);
+  box-shadow:0 2px 8px rgba(42,42,69,.07)
+}
+.pattern-cell.q{ color:var(--c-primary); font-weight:800; border:3px dashed #C9C1FF; background:transparent }
+.opt-icon{
+  cursor:pointer; min-width:var(--touch,64px); min-height:var(--touch,64px);
+  border:none; border-radius:var(--r-md,18px); background:#FFF;
+  font-size:clamp(26px,5.5vmin,44px); box-shadow:0 3px 12px rgba(42,42,69,.10)
+}
+.opt-icon.right{ box-shadow:0 0 0 4px #9BE0BC inset; background:#DDF6E6 }
+
+.big-number{
+  font-size:clamp(58px,14vmin,120px); font-weight:800; color:var(--c-primary);
+  line-height:1
+}
+.opt-group{
+  cursor:pointer; min-height:var(--touch,64px); padding:clamp(8px,1.6vmin,14px);
+  border:none; border-radius:var(--r-md,18px); background:#FFF;
+  box-shadow:0 3px 12px rgba(42,42,69,.10)
+}
+.opt-group.right{ box-shadow:0 0 0 4px #9BE0BC inset; background:#DDF6E6 }
+.sum-total{ font-size:clamp(28px,6vmin,52px); font-weight:800; color:var(--c-primary) }
+
    Карти / решетки (букви, звезди, родители)
    ========================================================================= */
 .page-title{display:flex;align-items:center;gap:var(--s-3);padding:2px 2px var(--s-4);flex:0 0 auto}
@@ -1466,6 +1505,9 @@ const LANGS = {
       trackPhonics:"KLANKEN", trackStories:"VERHALEN",
       writeFree:"Zelf", writeGuided:"Stap voor stap",
       friends:"Vrienden", friendsTitle:"Mijn vrienden",
+      promptShape:"Welke vorm is dit?", promptPattern:"Wat komt hierna?",
+      promptMatch:"Welke groep hoort bij dit getal?", promptBuild:"Hoe maak je",
+      makes:"is", hintLookAgain:"Kijk nog eens goed.",
       friendUnknown:"Deze ken je nog niet. Speel verder in het bos!",
       friendLives:"Woont in", friendLikes:"Houdt van", friendLetter:"Zijn letter is",
       close:"Klaar",
@@ -1565,6 +1607,9 @@ const LANGS = {
       trackPhonics:"ЗВУКОВЕ", trackStories:"РАЗКАЗЧЕТА",
       writeFree:"Сам", writeGuided:"Стъпка по стъпка",
       friends:"Приятели", friendsTitle:"Моите приятели",
+      promptShape:"Коя форма е това?", promptPattern:"Какво следва?",
+      promptMatch:"Коя група е това число?", promptBuild:"Как се прави",
+      makes:"прави", hintLookAgain:"Погледни пак внимателно.",
       friendUnknown:"Този още не си го срещнал. Играй още в гората!",
       friendLives:"Живее в", friendLikes:"Обича", friendLetter:"Буквата му е",
       close:"Готово",
@@ -1950,7 +1995,8 @@ const MASTERY_BANDS = [
 ];
 
 /* Видовете сметки. Изброени са, защото и звуковите задачи имат kind. */
-const MATH_KINDS = ["count", "add", "sub", "sequence", "compare"];
+const MATH_KINDS = ["count", "add", "sub", "sequence", "compare",
+                    "shape", "pattern", "match", "build"];
 
 function emptySkill(){
   return { attempts: 0, correct: 0, recent: [], mastery: 0, lastSeen: 0 };
@@ -3831,17 +3877,24 @@ function pickMode(level, word, forceBuild){
  * ========================================================================= */
 const COUNT_ICONS = ["🍎","⭐","🐟","🌸","🎈","🍓","🐞","🌰","🧩","🚗"];
 
+/* Смятането е повече от сметки. Първо идва усетът за количество: колко са,
+   кое е повече, кое следва, коя форма е това. Аритметиката стъпва отгоре. */
 const MATH_LEVELS = [
-  { id:1,  modes:["count"],                      max:5,  wordsToPass:5 },
-  { id:2,  modes:["count"],                      max:10, wordsToPass:6 },
-  { id:3,  modes:["count","sequence"],           max:10, wordsToPass:6 },
-  { id:4,  modes:["add"],                        max:5,  wordsToPass:6 },
-  { id:5,  modes:["add","count"],                max:10, wordsToPass:7 },
-  { id:6,  modes:["sub"],                        max:5,  wordsToPass:6 },
-  { id:7,  modes:["sub","add"],                  max:10, wordsToPass:7 },
-  { id:8,  modes:["compare"],                    max:10, wordsToPass:6 },
-  { id:9,  modes:["add","sub","count","compare"],max:10, wordsToPass:8 },
-  { id:10, modes:["add","sub","sequence"],       max:20, wordsToPass:8 }
+  { id:1,  modes:["count"],                          max:5,  wordsToPass:5 },
+  { id:2,  modes:["count","shape"],                  max:10, wordsToPass:6 },
+  { id:3,  modes:["count","match"],                  max:10, wordsToPass:6 },
+  { id:4,  modes:["pattern","shape"],                max:10, wordsToPass:6 },
+  { id:5,  modes:["sequence","match"],               max:10, wordsToPass:7 },
+  { id:6,  modes:["add"],                            max:5,  wordsToPass:6 },
+  { id:7,  modes:["add","count","pattern"],          max:10, wordsToPass:7 },
+  { id:8,  modes:["sub"],                            max:5,  wordsToPass:6 },
+  { id:9,  modes:["sub","add"],                      max:10, wordsToPass:7 },
+  { id:10, modes:["compare","match"],                max:10, wordsToPass:6 },
+  { id:11, modes:["build"],                          max:10, wordsToPass:7 },
+  { id:12, modes:["add","sub","sequence","compare"], max:10, wordsToPass:8 },
+  { id:13, modes:["build","pattern","shape"],        max:10, wordsToPass:8 },
+  { id:14, modes:["add","sub","build"],              max:20, wordsToPass:8 },
+  { id:15, modes:["add","sub","sequence","build","match","compare"], max:20, wordsToPass:9 }
 ];
 
 /** Ражда задача според правилата на нивото. */
@@ -3864,10 +3917,54 @@ function pickMathItem(level){
     const a = 2 + Math.floor(Math.random() * (max - 1));
     return { kind, icon, a, b: 1 + Math.floor(Math.random() * (a - 1)) };
   }
+  if(kind === "shape"){
+    // Формите не са аритметика, но са същото умение: гледам и познавам.
+    const target = rand(SHAPES);
+    const others = shuffle(SHAPES.filter(s2 => s2.id !== target.id)).slice(0, 2);
+    return { kind, shape: target.id, options: shuffle([target].concat(others)).map(s2 => s2.id) };
+  }
+  if(kind === "pattern"){
+    // Редица от две или три неща, която се повтаря. Търси се следващото.
+    const len = Math.random() < 0.55 ? 2 : 3;
+    const set = shuffle(COUNT_ICONS).slice(0, len);
+    const reps = 2 + Math.floor(Math.random() * 2);
+    const seq = [];
+    for(let i = 0; i < reps * len; i++) seq.push(set[i % len]);
+    const answer = set[seq.length % len];
+    const others = shuffle(COUNT_ICONS.filter(x => x !== answer)).slice(0, 2);
+    return { kind, seq, answer, options: shuffle([answer].concat(others)) };
+  }
+  if(kind === "match"){
+    // Число ↔ количество: показва се число, избира се групата с толкова неща.
+    const n = upto(max);
+    const wrong = shuffle([n - 2, n - 1, n + 1, n + 2, n + 3]
+      .filter(v => v >= 1 && v <= 20 && v !== n)).slice(0, 2);
+    return { kind, icon, n, options: shuffle([n].concat(wrong)) };
+  }
+  if(kind === "build"){
+    // „Направи 8“: показва се 5 + ? и се търси другото събираемо.
+    const total = 3 + Math.floor(Math.random() * (max - 2));
+    const a = 1 + Math.floor(Math.random() * (total - 1));
+    return { kind, icon, total, a };
+  }
   const a = upto(max - 1);
   return { kind:"add", icon, a, b: upto(Math.max(1, max - a)) };
 }
+
+/* Формите се учат по вид, не по име — детето вижда фигурата и я познава. */
+const SHAPES = [
+  { id:"circle",    draw:"circle"    },
+  { id:"square",    draw:"square"    },
+  { id:"triangle",  draw:"triangle"  },
+  { id:"rectangle", draw:"rectangle" },
+  { id:"star",      draw:"star"      },
+  { id:"heart",     draw:"heart"     }
+];
 function mathAnswer(it){
+  if(it.kind === "shape")    return it.shape;      // отговорът е вид, не число
+  if(it.kind === "pattern")  return it.answer;     // отговорът е картинка
+  if(it.kind === "match")    return it.n;
+  if(it.kind === "build")    return it.total - it.a;
   if(it.kind === "count")    return it.n;
   if(it.kind === "add")      return it.a + it.b;
   if(it.kind === "sub")      return it.a - it.b;
@@ -4002,6 +4099,166 @@ const MODE_COMPARE = {
         if(step === 1){ Speech.speak(t("promptCompare")); return t("hintCountAgain"); }
         const right = Array.from(wrap.children)[more === "a" ? 0 : 1];
         if(right) right.classList.add("right");
+        return t("hintHereIs");
+      },
+      destroy(){}
+    };
+  }
+};
+
+/* ==== src/games/math/number-sense.js ==== */
+/* =========================================================================
+ * УСЕТ ЗА ЧИСЛА
+ * -------------------------------------------------------------------------
+ * Сметките са само едната половина. Другата е усетът: колко са, кое идва
+ * след кое, коя форма е това, от какво се прави осем.
+ *
+ * Четирите режима тук ползват същия скелет като аритметичните — въпрос
+ * горе, задача в средата, три възможности долу — за да няма шест почти
+ * еднакви реализации.
+ * ========================================================================= */
+
+/** Рисува форма в SVG. Формите се учат по вид, не по име. */
+function shapeSVG(id, size){
+  const s = size || 100;
+  const box = '0 0 100 100';
+  const fill = 'var(--c-primary)';
+  const body = {
+    circle:    '<circle cx="50" cy="50" r="38"/>',
+    square:    '<rect x="14" y="14" width="72" height="72" rx="6"/>',
+    rectangle: '<rect x="8" y="26" width="84" height="48" rx="6"/>',
+    triangle:  '<path d="M50 12 L90 86 L10 86 Z"/>',
+    star:      '<path d="M50 10 L61 39 L92 39 L67 58 L76 88 L50 70 L24 88 L33 58 L8 39 L39 39 Z"/>',
+    heart:     '<path d="M50 86 C10 58 12 26 32 22 C42 20 48 28 50 34 C52 28 58 20 68 22 C88 26 90 58 50 86 Z"/>'
+  }[id] || '<circle cx="50" cy="50" r="38"/>';
+  return '<svg viewBox="' + box + '" width="' + s + '" height="' + s + '" aria-hidden="true" ' +
+         'focusable="false" fill="' + fill + '">' + body + '</svg>';
+}
+
+/* ---------------------------------------------------------------------
+ * Общ скелет: задача горе, три възможности долу.
+ * `render` рисува задачата, `option` рисува една възможност.
+ * ------------------------------------------------------------------- */
+function createSenseMode(id, promptKey, render, option, sayIt){
+  return {
+    id: id, showsPicture: false,
+    supports(){ return true; },
+    mount(root, host){
+      const it = host.item, answer = mathAnswer(it);
+      let mistakes = 0, done = false;
+
+      root.appendChild(h("p", { class:"prompt" }, t(promptKey)));
+      root.appendChild(h("div", { class:"math-stage" }, render(it)));
+
+      const optsEl = h("div", { class:"options" });
+      it.options.forEach(value => {
+        const b = option(value);
+        b.addEventListener("click", () => {
+          if(done) return;
+          if(value === answer){
+            done = true; b.classList.add("right"); Sfx.place();
+            setTimeout(() => host.correct(mistakes), 420);
+          } else { mistakes++; Sfx.wrong(); shakeEl(b); host.mistake(); }
+        });
+        optsEl.appendChild(b);
+      });
+      root.appendChild(optsEl);
+
+      return {
+        maxHints: 2,
+        hint(step){
+          if(step === 1){ if(sayIt) sayIt(it); return t("hintLookAgain"); }
+          const right = Array.from(optsEl.children)
+            .find(b => b.dataset.value === String(answer));
+          if(right) right.classList.add("right");
+          return t("hintHereIs");
+        },
+        destroy(){}
+      };
+    }
+  };
+}
+
+/* --- коя форма е това --------------------------------------------- */
+const MODE_SHAPE = createSenseMode("shape", "promptShape",
+  (it) => h("div", { class:"shape-target", html: shapeSVG(it.shape, 120) }),
+  (value) => {
+    const b = h("button", { class:"opt-shape", type:"button",
+                            "aria-label": value, html: shapeSVG(value, 72) });
+    b.dataset.value = value;
+    return b;
+  });
+
+/* --- какво следва в редицата -------------------------------------- */
+const MODE_PATTERN = createSenseMode("pattern", "promptPattern",
+  (it) => {
+    const row = h("div", { class:"pattern-row" });
+    it.seq.forEach(x => row.appendChild(h("span", { class:"pattern-cell" }, x)));
+    row.appendChild(h("span", { class:"pattern-cell q" }, "?"));
+    return row;
+  },
+  (value) => {
+    const b = h("button", { class:"opt-icon", type:"button", "aria-label": value }, value);
+    b.dataset.value = value;
+    return b;
+  });
+
+/* --- кое число е това: показва се число, избира се групата ---------- */
+const MODE_MATCH = createSenseMode("match", "promptMatch",
+  (it) => h("div", { class:"big-number" }, String(it.n)),
+  (value) => {
+    const b = h("button", { class:"opt-group", type:"button",
+                            "aria-label": numberWord(value) });
+    b.appendChild(iconRow("⭐", value, "group"));
+    b.dataset.value = value;
+    return b;
+  },
+  (it) => Speech.speak(numberWord(it.n)));
+
+/* --- направи числото: 5 + ? = 8 ------------------------------------ */
+const MODE_MAKE = {
+  id: "build", showsPicture: false,
+  supports(){ return true; },
+  mount(root, host){
+    const it = host.item, answer = mathAnswer(it);
+    let mistakes = 0, done = false;
+
+    root.appendChild(h("p", { class:"prompt" },
+      t("promptBuild") + " " + it.total + "?"));
+    root.appendChild(h("div", { class:"math-stage" },
+      h("div", { class:"sum-row" },
+        iconRow(it.icon, it.a, "group"),
+        h("span", { class:"sum-sign" }, "+"),
+        h("span", { class:"sum-q" }, "?"),
+        h("span", { class:"sum-sign" }, "="),
+        h("span", { class:"sum-total" }, String(it.total)))));
+
+    const optsEl = h("div", { class:"options" });
+    numberOptions(answer, 20).forEach(v => {
+      const b = h("button", { class:"opt-letter", type:"button",
+                              "aria-label": numberWord(v) }, String(v));
+      b.dataset.value = String(v);
+      b.addEventListener("click", () => {
+        if(done) return;
+        if(v === answer){
+          done = true; b.classList.add("right"); Sfx.place();
+          setTimeout(() => host.correct(mistakes), 420);
+        } else { mistakes++; Sfx.wrong(); shakeEl(b); host.mistake(); }
+      });
+      optsEl.appendChild(b);
+    });
+    root.appendChild(optsEl);
+
+    return {
+      maxHints: 2,
+      hint(step){
+        if(step === 1){
+          Speech.speak(numberWord(it.a) + " " + t("plus") + " ? " + t("makes") + " " + numberWord(it.total));
+          return t("hintCountAgain");
+        }
+        const right = Array.from(optsEl.children).find(b => b.textContent === String(answer));
+        if(right) right.classList.add("right");
+        Speech.speak(numberWord(answer));
         return t("hintHereIs");
       },
       destroy(){}
@@ -5469,7 +5726,8 @@ const CATCH_LEVELS = [
 
 /* ==== src/core/tracks.js ==== */
 const MATH_MODES = {};
-[MODE_COUNT, MODE_ADD, MODE_SUB, MODE_SEQUENCE, MODE_COMPARE].forEach(m => { MATH_MODES[m.id] = m; });
+[MODE_COUNT, MODE_ADD, MODE_SUB, MODE_SEQUENCE, MODE_COMPARE,
+ MODE_SHAPE, MODE_PATTERN, MODE_MATCH, MODE_MAKE].forEach(m => { MATH_MODES[m.id] = m; });
 
 /* =========================================================================
  * ПЪТИЩА — какво се учи. Всеки път има свои нива, задачи и мини-игри.

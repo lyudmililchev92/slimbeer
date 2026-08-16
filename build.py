@@ -56,6 +56,7 @@ SOURCES = [
     "src/games/reading/reading.js",
     "src/games/math/generators.js",
     "src/games/math/modes.js",
+    "src/games/math/number-sense.js",
     "src/games/letter-hunt/catch.js",
     "src/data/forest-world.js",
     "src/data/forest-friends.js",

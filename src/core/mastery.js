@@ -38,7 +38,8 @@ const MASTERY_BANDS = [
 ];
 
 /* Видовете сметки. Изброени са, защото и звуковите задачи имат kind. */
-const MATH_KINDS = ["count", "add", "sub", "sequence", "compare"];
+const MATH_KINDS = ["count", "add", "sub", "sequence", "compare",
+                    "shape", "pattern", "match", "build"];
 
 function emptySkill(){
   return { attempts: 0, correct: 0, recent: [], mastery: 0, lastSeen: 0 };

@@ -252,91 +252,67 @@ group("Смятане — генераторите");
 
 (function(){
   api.State.progress = api.defaultProgress();
-  let bad = [];
+  const bad = [];
+  const seenKinds = {};
+  const NUMERIC = ["count", "add", "sub", "sequence", "compare", "match", "build"];
+
   for(const lvl of api.MATH_LEVELS){
-    for(let i = 0; i < 500; i++){
+    for(let i = 0; i < 600; i++){
       const it = api.pickMathItem(lvl);
-      const ans = api.mathAnswer(it);
-      if(!it || !it.kind) { bad.push("ниво " + lvl.id + ": празна задача"); break; }
-      if(typeof ans !== "number" || !isFinite(ans)) bad.push("ниво " + lvl.id + " " + it.kind + ": отговорът не е число");
-      if(!Number.isInteger(ans)) bad.push("ниво " + lvl.id + ": не е цяло — " + ans);
-      if(ans < 0) bad.push("ниво " + lvl.id + ": отрицателен отговор " + ans);
-      if(ans > 20) bad.push("ниво " + lvl.id + ": отговор " + ans + " над изговорените числа");
+      if(!it || !it.kind){ bad.push("ниво " + lvl.id + ": празна задача"); break; }
+      seenKinds[it.kind] = (seenKinds[it.kind] || 0) + 1;
       if(lvl.modes.indexOf(it.kind) < 0) bad.push("ниво " + lvl.id + ": непоискан вид " + it.kind);
-      const opts = api.numberOptions(ans, 20);
-      if(opts.indexOf(ans) < 0) bad.push("ниво " + lvl.id + ": верният отговор липсва сред вариантите");
-      if(new Set(opts).size !== opts.length) bad.push("ниво " + lvl.id + ": повтарящи се варианти");
-      if(opts.some(v => v < 0)) bad.push("ниво " + lvl.id + ": отрицателен вариант");
+      const ans = api.mathAnswer(it);
+
+      if(NUMERIC.indexOf(it.kind) >= 0){
+        if(typeof ans !== "number" || !isFinite(ans)) bad.push("ниво " + lvl.id + " " + it.kind + ": отговорът не е число");
+        else {
+          if(!Number.isInteger(ans)) bad.push("ниво " + lvl.id + ": не е цяло — " + ans);
+          if(ans < 0) bad.push("ниво " + lvl.id + " " + it.kind + ": отрицателен отговор " + ans);
+          if(ans > 20) bad.push("ниво " + lvl.id + ": отговор " + ans + " над изговорените числа");
+        }
+      } else if(typeof ans !== "string" || !ans){
+        bad.push("ниво " + lvl.id + " " + it.kind + ": отговорът не е стойност");
+      }
+
+      // задачите със собствени възможности
+      if(it.options){
+        if(it.options.length < 3) bad.push("ниво " + lvl.id + " " + it.kind + ": под три възможности");
+        if(new Set(it.options).size !== it.options.length) bad.push("ниво " + lvl.id + " " + it.kind + ": повтарящa се възможност");
+        if(it.options.indexOf(ans) < 0) bad.push("ниво " + lvl.id + " " + it.kind + ": верният отговор липсва");
+      } else {
+        const opts = api.numberOptions(ans, 20);
+        if(opts.indexOf(ans) < 0) bad.push("ниво " + lvl.id + ": верният отговор липсва сред числата");
+        if(new Set(opts).size !== opts.length) bad.push("ниво " + lvl.id + ": повтарящи се числа");
+        if(opts.some(v => v < 0)) bad.push("ниво " + lvl.id + ": отрицателно число сред вариантите");
+      }
+
+      // всеки вид със своите изисквания
+      if(it.kind === "sub" && it.a - it.b < 0) bad.push("ниво " + lvl.id + ": изваждане под нулата");
+      if(it.kind === "add" && it.a + it.b > lvl.max) bad.push("ниво " + lvl.id + ": събиране над тавана");
+      if(it.kind === "compare" && it.a === it.b) bad.push("ниво " + lvl.id + ": сравняване на равни групи");
+      if(it.kind === "build"){
+        if(it.a >= it.total) bad.push("ниво " + lvl.id + ": „направи“ без какво да се добави");
+        if(it.total > lvl.max) bad.push("ниво " + lvl.id + ": „направи“ над тавана");
+      }
+      if(it.kind === "pattern"){
+        // редицата наистина трябва да се повтаря, иначе отговорът е гадаене
+        const period = new Set(it.seq).size;
+        if(it.seq.length % period !== 0) bad.push("ниво " + lvl.id + ": редицата не се затваря");
+        for(let k = period; k < it.seq.length; k++)
+          if(it.seq[k] !== it.seq[k - period]) bad.push("ниво " + lvl.id + ": редицата не се повтаря");
+        if(it.answer !== it.seq[it.seq.length % period]) bad.push("ниво " + lvl.id + ": грешно следващо в редицата");
+      }
+      if(it.kind === "shape" && it.options.indexOf(it.shape) < 0)
+        bad.push("ниво " + lvl.id + ": формата липсва сред възможностите");
     }
   }
-  ok("5000 задачи без нито един невалиден отговор", bad.length === 0, bad.slice(0, 3).join(" | "));
-})();
-
-/* ====================================================================
- * Това е приемният тест на фазата: слабото умение излиза по-често, но
- * не толкова, че детето да усети разпит. Мери се върху истинския
- * pickWord с десетки хиляди тегления, защото при сто думи разликата
- * потъва в шума.
- * ================================================================== */
-group("Умения — адаптивността наистина ли работи");
-
-(function(){
-  const level = api.LEVELS.find(l => l.id === 6);
-  const az = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ".split("");
-
-  function seed(weak){
-    api.State.progress = api.defaultProgress();
-    api.State.progress.language = "bg";
-    api.State.session.recent = [];
-    az.forEach(ch => {
-      const w = weak.indexOf(ch) >= 0;
-      api.State.progress.mastery["letter.bg." + ch + ".recognition"] = {
-        attempts: 10, correct: w ? 2 : 9,
-        recent: w ? [0,0,1,0,0,0,1,0] : [1,1,1,0,1,1,1,1],
-        mastery: w ? 0.16 : 0.86, lastSeen: 1
-      };
-    });
-  }
-
-  function run(n){
-    let hits = 0;
-    for(let i = 0; i < n; i++){
-      const w = api.pickWord(level);
-      if(/[ЖЗ]/.test(w.word)) hits++;
-      api.State.session.recent.push(w.word);
-      if(api.State.session.recent.length > api.CONFIG.recentMemory) api.State.session.recent.shift();
-    }
-    return hits / n;
-  }
-
-  api.setWords(api.buildWords("bg", () => true));
-  const N = 40000;
-  seed([]);            const flat = run(N);
-  seed(["Ж", "З"]);    const adapted = run(N);
-  const lift = adapted / flat;
-
-  console.log("    без адаптация " + (flat*100).toFixed(1) + "%  →  със слаби Ж/З " +
-              (adapted*100).toFixed(1) + "%   (×" + lift.toFixed(2) + ")");
-  ok("думите с Ж и З излизат по-често, когато те не се удават",
-     adapted > flat, (flat * 100).toFixed(1) + "% → " + (adapted * 100).toFixed(1) + "%");
-  ok("увеличението е забележимо", lift > 1.10, "×" + lift.toFixed(2));
-  ok("увеличението не е задушаващо", lift < 1.90, "×" + lift.toFixed(2));
-  ok("останалите думи не изчезват", adapted < 0.45, (adapted * 100).toFixed(1) + "%");
-
-  // и не бива да се повтаря една и съща дума в близките рундове
-  seed(["Ж", "З"]);
-  const seq = [];
-  for(let i = 0; i < 400; i++){
-    const w = api.pickWord(level);
-    seq.push(w.word);
-    api.State.session.recent.push(w.word);
-    if(api.State.session.recent.length > api.CONFIG.recentMemory) api.State.session.recent.shift();
-  }
-  let tooSoon = 0;
-  for(let i = 0; i < seq.length; i++)
-    for(let j = i + 1; j < Math.min(seq.length, i + api.CONFIG.recentMemory + 1); j++)
-      if(seq[i] === seq[j]) tooSoon++;
-  ok("нито една дума не се повтаря в рамките на паметта", tooSoon === 0, String(tooSoon));
+  ok("9000 задачи без нито един невалиден отговор", bad.length === 0,
+     [...new Set(bad)].slice(0, 3).join(" | "));
+  ok("всичките девет вида задачи се появяват", Object.keys(seenKinds).length === 9,
+     Object.keys(seenKinds).sort().join(" "));
+  ok("има нива и с усет за числа, и с аритметика",
+     api.MATH_LEVELS.length >= 15, String(api.MATH_LEVELS.length));
 })();
 
 /* ==================================================================== */

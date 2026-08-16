@@ -1,5 +1,6 @@
 const MATH_MODES = {};
-[MODE_COUNT, MODE_ADD, MODE_SUB, MODE_SEQUENCE, MODE_COMPARE].forEach(m => { MATH_MODES[m.id] = m; });
+[MODE_COUNT, MODE_ADD, MODE_SUB, MODE_SEQUENCE, MODE_COMPARE,
+ MODE_SHAPE, MODE_PATTERN, MODE_MATCH, MODE_MAKE].forEach(m => { MATH_MODES[m.id] = m; });
 
 /* =========================================================================
  * ПЪТИЩА — какво се учи. Всеки път има свои нива, задачи и мини-игри.
