@@ -618,3 +618,24 @@ h1,h2,h3,p{margin:0}
     transition-duration:.01ms!important;scroll-behavior:auto!important;
   }
 }
+
+/* Въпрос, който се чува. Малкият високоговорител казва на детето,
+   че може да го докосне и да го чуе пак. */
+.prompt.say{
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: opacity .15s ease;
+}
+.prompt.say::after{
+  content: "🔊";
+  margin-left: .45em;
+  font-size: .85em;
+  opacity: .55;
+}
+.prompt.say:hover,
+.prompt.say:active{ opacity: .75; }
+.prompt.say:focus-visible{ border-radius: 12px; }
+@media (prefers-reduced-motion: reduce){
+  .prompt.say{ transition: none; }
+}

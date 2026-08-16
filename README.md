@@ -76,9 +76,21 @@ from level rules, so they never repeat.
 inside the letter and pink outside, so the child sees immediately when the
 stroke leaves the shape. Both alphabets — 26 Latin letters and 30 Cyrillic.
 
-**755 words in Dutch and 766 in Bulgarian**, across 24 categories. 590 of the
-Dutch ones have a picture; 165 more have no picture and are heard instead,
-which is what makes verbs and adjectives possible at all.
+**1012 words in Dutch and 1023 in Bulgarian**, across 27 categories. 611 of the
+Dutch ones have a picture; 401 more have no picture and are heard instead,
+which is what makes verbs, adjectives, weekdays and months possible at all.
+Picture-less words start appearing from level six, so the first levels stay
+anchored to a picture.
+
+The word list lives in its own file, `words.js`, so words can be added without
+touching the code. One line is one word:
+
+    БЪЛ-ГАР-СКИ/NE-DER-LANDS 🖼
+
+The hyphens split the syllables, so a word and its syllables cannot drift
+apart — they are the same string. The last field is an emoji, `@name` for one
+of the hand-drawn illustrations, or `~` for a word that is heard instead of
+seen. The file explains the rest at the top.
 
 Progress is kept separately per language and per subject. Stars are shared.
 
@@ -108,7 +120,8 @@ browser. The parent screen shows which voice is in use.
 |---|---|
 | `index.html` | the shell — a handful of tags |
 | `styles.css` | all the styling |
-| `game.js` | everything else: data, screens, game modes |
+| `words.js` | the word list — add words here |
+| `game.js` | everything else: screens, game modes, levels |
 | `sw.js` | offline caching, only used over HTTPS |
 | `build.py` | glues the three into one file |
 
@@ -119,7 +132,7 @@ another page.
 
 ## Running it
 
-Open `index.html`. The three files have to sit in the same folder.
+Open `index.html`. All the files have to sit in the same folder.
 
 For a phone on the same network:
 
@@ -214,9 +227,21 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 **Писане** — детето проследява буквата с пръст. Мастилото е лилаво в буквата и
 розово извън нея, така че веднага вижда, когато излезе. И двете азбуки.
 
-**766 думи на български и 755 на нидерландски**, в 24 категории. 601 от
-българските са с картинка, а още 165 се чуват вместо да се виждат — това
-позволява глаголи и прилагателни, за които картинка няма.
+**1023 думи на български и 1012 на нидерландски**, в 27 категории. 622 от
+българските са с картинка, а още 401 се чуват вместо да се виждат — това
+позволява глаголи, прилагателни, дни от седмицата и месеци, за които картинка
+няма. Думите без картинка тръгват от шесто ниво, за да останат първите нива
+с картинка.
+
+Речникът е в свой файл, `words.js`, за да се добавят думи, без да се пипа
+кодът. Един ред е една дума:
+
+    БЪЛ-ГАР-СКИ/NE-DER-LANDS 🖼
+
+Тиретата делят сричките, тоест думата и сричките ѝ не могат да се разминат —
+те са един и същ надпис. Накрая стои емоджи, `@име` за ръчно рисувана
+илюстрация или `~` за дума, която се чува вместо да се вижда. Останалото е
+обяснено в началото на файла.
 
 Прогресът е отделен за всеки език и за всеки предмет. Звездите са общи.
 

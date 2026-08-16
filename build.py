@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Сглобява едно-файлова версия на играта.
 
-Проектът се пише в три файла — index.html, styles.css и game.js — защото
+Проектът се пише в няколко файла — index.html, styles.css, words.js и
+game.js — защото
 така се работи по-лесно. Но за някои начини на разпространение трябва
 всичко да е в един файл (например Claude Artifact, който слага собствена
 <head> секция, или изпращане на един файл по AirDrop).
@@ -33,10 +34,13 @@ def read(name: str) -> str:
 def build(single: bool) -> tuple[str, str]:
     html = read("index.html")
     css = read("styles.css")
+    words = read("words.js")
     js = read("game.js")
 
     html = html.replace('<link rel="stylesheet" href="styles.css">',
                         "<style>\n" + css.rstrip() + "\n</style>")
+    html = html.replace('<script src="words.js"></script>',
+                        "<script>\n" + words.rstrip() + "\n</script>")
     html = html.replace('<script src="game.js"></script>',
                         "<script>\n" + js.rstrip() + "\n</script>")
 
