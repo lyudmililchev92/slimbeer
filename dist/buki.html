@@ -166,7 +166,6 @@ h1,h2,h3,p{margin:0}
 }
 .icon-btn:active{transform:scale(.92)}
 
-/* =========================================================================
 
 /* Емоджито няма собствен размер — то е текст и наследява. Всяко място,
    което показва картинка, трябва да му зададе размер. Това тук е предпазна
@@ -176,9 +175,22 @@ h1,h2,h3,p{margin:0}
 .art .emoji{ font-size:clamp(30px,7vmin,56px); line-height:1 }
 .art svg{ width:100%; height:100% }
 
+/* =========================================================================
    Начален екран
    ========================================================================= */
-.home{align-items:center;justify-content:center;text-align:center;gap:clamp(8px,1.8vh,18px);overflow-y:auto}
+/* justify-content:center реже отгоре, щом съдържанието не се побере —
+   центрираното прелива и в двете посоки, а нагоре не се превърта. С
+   "safe" браузърът се връща към подравняване отгоре точно тогава.
+   Първият ред остава за по-стари браузъри, които не знаят "safe". */
+.home{
+  align-items:center;
+  justify-content:center;
+  justify-content:safe center;
+  text-align:center;
+  gap:clamp(8px,1.8vh,18px);
+  overflow-y:auto;
+  padding-top:max(10px, env(safe-area-inset-top));
+}
 .home .logo{
   font-size:clamp(28px,5.4vmin,50px);font-weight:var(--fw-bold);letter-spacing:1px;
   color:var(--c-primary);
@@ -339,7 +351,6 @@ h1,h2,h3,p{margin:0}
   transition:width var(--t-slow) var(--ease);
 }
 
-/* =========================================================================
 
 /* петата карта на началния екран */
 .track-card.t-phonics{ background:linear-gradient(160deg,#F2A65A,#E4813A) }
@@ -393,6 +404,7 @@ h1,h2,h3,p{margin:0}
   font-size:var(--fs-small,14px); font-weight:600; color:var(--c-ink-soft)
 }
 
+/* =========================================================================
    Игрално поле
    ========================================================================= */
 .stage{
@@ -582,7 +594,6 @@ h1,h2,h3,p{margin:0}
 .modal-card p{color:var(--c-ink-soft);font-weight:700;font-size:16px}
 .modal-actions{display:flex;gap:var(--s-3);flex-wrap:wrap;justify-content:center}
 
-/* =========================================================================
 
 /* --- звукове ------------------------------------------------------- */
 /* Думата-подсказка при „същото начало“: детето вижда с какво сравнява. */
@@ -789,6 +800,7 @@ h1,h2,h3,p{margin:0}
 .btn.hold.holding{ transform:scale(.97) }
 @media (prefers-reduced-motion: reduce){ .btn.hold.holding{ transform:none } }
 
+/* =========================================================================
    Карти / решетки (букви, звезди, родители)
    ========================================================================= */
 .page-title{display:flex;align-items:center;gap:var(--s-3);padding:2px 2px var(--s-4);flex:0 0 auto}
@@ -868,7 +880,6 @@ h1,h2,h3,p{margin:0}
 }
 .debug-panel button{background:#2E2E4C;color:#fff;border-radius:8px;padding:4px 9px;margin:2px;font-size:12px}
 
-/* =========================================================================
 
 /* Обобщение на уменията в екрана за родители. Букви, не числа. */
 .skills-card{ display:flex; flex-direction:column; gap:var(--sp-2, 10px) }
@@ -952,6 +963,7 @@ h1,h2,h3,p{margin:0}
   color:var(--c-ink); line-height:1.4
 }
 
+/* =========================================================================
    Адаптивност
    ========================================================================= */
 /* таблет/десктоп landscape → картинка вляво, игра вдясно */

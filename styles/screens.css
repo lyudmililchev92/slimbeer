@@ -1,6 +1,19 @@
+/* =========================================================================
    Начален екран
    ========================================================================= */
-.home{align-items:center;justify-content:center;text-align:center;gap:clamp(8px,1.8vh,18px);overflow-y:auto}
+/* justify-content:center реже отгоре, щом съдържанието не се побере —
+   центрираното прелива и в двете посоки, а нагоре не се превърта. С
+   "safe" браузърът се връща към подравняване отгоре точно тогава.
+   Първият ред остава за по-стари браузъри, които не знаят "safe". */
+.home{
+  align-items:center;
+  justify-content:center;
+  justify-content:safe center;
+  text-align:center;
+  gap:clamp(8px,1.8vh,18px);
+  overflow-y:auto;
+  padding-top:max(10px, env(safe-area-inset-top));
+}
 .home .logo{
   font-size:clamp(28px,5.4vmin,50px);font-weight:var(--fw-bold);letter-spacing:1px;
   color:var(--c-primary);
@@ -161,7 +174,6 @@
   transition:width var(--t-slow) var(--ease);
 }
 
-/* =========================================================================
 
 /* петата карта на началния екран */
 .track-card.t-phonics{ background:linear-gradient(160deg,#F2A65A,#E4813A) }

@@ -281,6 +281,49 @@ def duplicate_ui_keys():
     return bad
 
 
+def broken_css_comments():
+    """Стиловете се разделиха по секции и три от файловете се оказаха
+    срязани по средата на коментар. Един увиснал /* или самотен */ кара
+    браузъра да изхвърли правилата около шева — така .home загуби
+    центрирането си и маскотът клекна вляво. Проверката е за цялата
+    сглобка, защото шевът се вижда чак когато файловете се слепят."""
+    bad = []
+    for name in STYLES:
+        src = read(name)
+        i, depth, first_stray = 0, 0, None
+        while i < len(src):
+            if src.startswith("/*", i):
+                depth += 1; i += 2
+            elif src.startswith("*/", i):
+                depth -= 1; i += 2
+                if depth < 0:
+                    if first_stray is None: first_stray = src[:i].count("\n") + 1
+                    depth = 0
+            else:
+                i += 1
+        if first_stray:
+            bad.append(name + ": самотен */ на ред " + str(first_stray))
+        if depth > 0:
+            bad.append(name + ": незатворен коментар")
+    return bad
+
+
+def rules_lost(css):
+    """Колко правила биха се изгубили: броим отварящите скоби извън
+    коментари и низове. Не е пълен парсер, но хваща точно случая, който
+    ни изяде правилата."""
+    depth, i, opens = 0, 0, 0
+    while i < len(css):
+        if css.startswith("/*", i):
+            j = css.find("*/", i + 2)
+            i = (j + 2) if j != -1 else len(css)
+            continue
+        if css[i] == "{":
+            opens += 1
+        i += 1
+    return opens
+
+
 def name_clashes():
     """Всички файлове живеят в един обхват. Ако две от тях обявят едно и
     също име отгоре, второто мълчаливо изяжда първото — точно това стана
@@ -298,6 +341,13 @@ def name_clashes():
 
 
 def main():
+    css_bad = broken_css_comments()
+    if css_bad:
+        print("Счупен коментар в стиловете:\n")
+        for c in css_bad:
+            print("  ✗ " + c)
+        raise SystemExit(1)
+
     dupes = duplicate_ui_keys()
     if dupes:
         print("Повторен ключ в езиков пакет:\n")
@@ -357,7 +407,7 @@ def main():
     print("  писане          %d букви с щрихове" % n["strokes"])
     print("  задачки         %d извън екрана" % n["missions"])
     print("  счупени връзки  0")
-    print("\n  изходни файлове %d js, %d css" % (len(SOURCES), len(STYLES)))
+    print("  правила в css   %d" % rules_lost(css))
     print("  app.js          %s байта" % f"{len(js.encode()):,}")
     print("  styles.css      %s байта" % f"{len(css.encode()):,}")
     print("  dist/buki.html  %s байта" % f"{len(standalone.encode()):,}")
