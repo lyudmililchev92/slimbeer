@@ -29,8 +29,14 @@ mid-air. Letters float at jump height, so nothing is picked up by accident —
 every letter is a decision. Platforms to land on, bouncy mushrooms, and water
 gaps. Falling in costs nothing: a gust carries him across and he runs on.
 
-Each level carries a quest: collect the word **and** a number of acorns. Only
-when both are done does a star-gate grow ahead and end the level.
+Every level is a small errand. A forest friend waits near the start with a
+speech bubble showing what they need, and waits again at the gate: a squirrel
+wants acorns, a bird wants eggs, a bee wants flowers, a bear wants honey, a
+dragon wants crystals — twelve friends, twelve things to gather.
+
+Finding them all opens the star-gate. The word floating around the level is a
+**bonus**: complete it and you get extra stars, skip it and the level still
+ends. Letters are the seasoning here, not the meal.
 
 From level three the forest holds **challenge spots**, marked by a wooden sign
 with three platforms below. Land on the right one:
@@ -160,8 +166,14 @@ No fonts are bundled; the game uses whatever rounded system font is available.
 буква е избор. Има площадки, гъби-пружини и водни дупки. Падането не струва
 нищо: полъх го пренася отвъд и продължава.
 
-Всяко ниво носи куест: събери думата **и** определен брой жълъди. Чак когато
-и двете са готови, напред израства дърво със звезда и нивото свършва.
+Всяко ниво е малка поръчка. Горски приятел чака в началото с балонче какво му
+трябва и пак чака при портата: катеричка иска жълъди, птичка иска яйца, пчела
+иска цветя, мечок иска мед, дракон иска кристали — дванайсет приятели,
+дванайсет неща за събиране.
+
+Събереш ли ги, портата се отваря. Думата, която виси наоколо, е **бонус** —
+събереш ли я, взимаш още звезди; подминеш ли я, нивото пак свършва. Буквите
+тук са подправката, не ястието.
 
 От трето ниво се появяват **предизвикателства** — дървена табела и три
 площадки под нея. Стъпва се на вярната:

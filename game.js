@@ -2074,6 +2074,24 @@ const FOREST_THEMES = {
             trunk:"#4A3A2E", sun:"rgba(235,240,255,.92)", air:"✨", stars:true }
 };
 
+/* Всяко ниво е малка история: горски приятел има нужда от нещо и детето
+   му го събира по пътя. Буквите висят наоколо като допълнение — носят
+   бонус звезди, но портата се отваря от мисията. */
+const FOREST_QUESTS = [
+  { who:"🐿️", item:"🌰", nl:"eikels",     bg:"жълъди" },
+  { who:"🐦", item:"🥚", nl:"eieren",     bg:"яйца" },
+  { who:"🐝", item:"🌸", nl:"bloemen",    bg:"цветя" },
+  { who:"🦔", item:"🍎", nl:"appels",     bg:"ябълки" },
+  { who:"🐸", item:"💧", nl:"druppels",   bg:"капки" },
+  { who:"🦋", item:"🍃", nl:"blaadjes",   bg:"листа" },
+  { who:"🐰", item:"🥕", nl:"wortels",    bg:"моркови" },
+  { who:"🐻", item:"🍯", nl:"honing",     bg:"мед" },
+  { who:"🦊", item:"🫐", nl:"bessen",     bg:"боровинки" },
+  { who:"🦉", item:"⭐", nl:"sterren",    bg:"звезди" },
+  { who:"🦇", item:"🍄", nl:"paddenstoelen", bg:"гъби" },
+  { who:"🐉", item:"💎", nl:"kristallen", bg:"кристали" }
+];
+
 const MODE_FOREST = {
   id:"forest", showsPicture:false, fullArea:true,
   supports(word){ return !word.audioOnly && word.word.length >= 3 && word.word.length <= 6; },
@@ -2084,6 +2102,7 @@ const MODE_FOREST = {
     const lvl = getLevel(LP().currentLevel);
     const nutsNeeded = lvl.nuts || 3;
     const TH = FOREST_THEMES[lvl.theme || "day"];
+    const Q = FOREST_QUESTS[(lvl.quest !== undefined ? lvl.quest : (lvl.id - 1)) % FOREST_QUESTS.length];
 
     let need = 0, mistakes = 0, nuts = 0, running = true, raf = 0, gateOut = false;
     let bonus = 0;                 // решени предизвикателства по пътя
@@ -2099,7 +2118,8 @@ const MODE_FOREST = {
       return el;
     });
     head.appendChild(slotsEl);
-    const quest = h("span", { class:"nut-badge" }, "🌰 0/" + nutsNeeded);
+    const quest = h("span", { class:"nut-badge quest" },
+      h("span", { class:"q-who" }, Q.who), Q.item + " 0/" + nutsNeeded);
     head.appendChild(quest);
     const bonusBadge = h("span", { class:"nut-badge bonus", hidden:true }, "⭐ 0");
     head.appendChild(bonusBadge);
@@ -2269,7 +2289,8 @@ const MODE_FOREST = {
 
     function checkQuest(){
       if(gateOut) return;
-      if(need >= letters.length && nuts >= nutsNeeded){
+      // Мисията отваря портата. Думата е допълнение и носи звезди.
+      if(nuts >= nutsNeeded){
         gateOut = true;
         items.push({ kind:"gate", x: camX + W * 1.25, hgt:0.34, taken:false, bob:0 });
         Sfx.star();
@@ -2295,7 +2316,7 @@ const MODE_FOREST = {
       }
       if(it.kind === "nut"){
         nuts++;
-        quest.textContent = "🌰 " + Math.min(nuts, nutsNeeded) + "/" + nutsNeeded;
+        quest.lastChild.textContent = Q.item + " " + Math.min(nuts, nutsNeeded) + "/" + nutsNeeded;
         if(nuts === nutsNeeded) quest.classList.add("done");
         Sfx.tap(); burst(sx, sy, "nut"); checkQuest();
         return;
@@ -2435,6 +2456,35 @@ const MODE_FOREST = {
       ctx.restore();
     }
 
+    /* Горският приятел: стои и чака, с балонче какво му трябва. */
+    function drawFriend(sx, ready){
+      const s = H * 0.16;
+      const by = ground - s * 0.55;
+      ctx.font = Math.round(s) + "px serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(Q.who, sx, by + Math.sin(clock * 2) * 3);
+
+      const bw = s * 1.25, bh = s * 0.72, bx = sx + s * 0.62, byy = by - s * 0.85;
+      ctx.fillStyle = ready ? "#DFF6E6" : "#FFFFFF";
+      ctx.strokeStyle = ready ? "#2FBF71" : "#D9D4F5";
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.roundRect(bx - bw/2, byy - bh/2, bw, bh, bh*0.34);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx - bw*0.24, byy + bh*0.42);
+      ctx.lineTo(bx - bw*0.44, byy + bh*0.80);
+      ctx.lineTo(bx - bw*0.04, byy + bh*0.44);
+      ctx.closePath(); ctx.fill();
+
+      ctx.font = Math.round(bh*0.52) + "px serif";
+      ctx.fillText(ready ? "✅" : Q.item, bx - bw*0.22, byy);
+      if(!ready){
+        ctx.fillStyle = "#5548C8";
+        ctx.font = "800 " + Math.round(bh*0.44) + "px " + getComputedStyle(document.body).fontFamily;
+        ctx.fillText("×" + nutsNeeded, bx + bw*0.20, byy);
+      }
+    }
+
     function tile(sx, sy, size, txt, col){
       ctx.save(); ctx.translate(sx, sy);
       ctx.beginPath(); ctx.roundRect(-size/2, -size/2, size, size, size*0.24);
@@ -2560,6 +2610,10 @@ const MODE_FOREST = {
         }
       });
 
+      // приятелят чака в началото на пътя
+      const fx = CH * 1.15 - camX;
+      if(fx > -H && fx < W + H) drawFriend(fx, nuts >= nutsNeeded);
+
       // табели на предизвикателствата
       zones.forEach(z => {
         const sx = z.x - camX;
@@ -2611,6 +2665,7 @@ const MODE_FOREST = {
           ctx.font = "800 " + Math.round(H*0.11) + "px " + getComputedStyle(document.body).fontFamily;
           ctx.textAlign = "center"; ctx.textBaseline = "middle";
           ctx.fillText("★", sx, ground - H*0.42);
+          drawFriend(sx - H*0.30, true);      // приятелят чака при портата
           return;
         }
         if(it.taken) return;
@@ -2619,7 +2674,7 @@ const MODE_FOREST = {
         if(it.kind === "nut"){
           ctx.font = Math.round(isz*0.8) + "px serif";
           ctx.textAlign = "center"; ctx.textBaseline = "middle";
-          ctx.fillText("🌰", sx, by);
+          ctx.fillText(Q.item, sx, by);
         } else if(it.kind === "feather"){
           const gl = ctx.createRadialGradient(sx, by, 2, sx, by, isz*0.75);
           gl.addColorStop(0, "rgba(255,214,102,.75)");
@@ -2800,7 +2855,8 @@ const MODE_FOREST = {
         if(hit){
           if(it.kind === "gate"){
             it.taken = true; running = false;
-            const extra = Math.min(3, bonus) + Math.min(2, Math.floor((nuts - nutsNeeded) / 4));
+            const extra = Math.min(3, bonus) + (wordDone() ? 2 : 0)
+                        + Math.min(2, Math.floor((nuts - nutsNeeded) / 4));
             if(extra > 0) addStars(extra);
             setTimeout(() => host.correct(mistakes), 350);
           } else take(it, sx, sy);
@@ -2863,32 +2919,32 @@ const MODE_FOREST = {
    и малко повече скорост. Промяната е плавна, за да не се усеща скок. */
 const FOREST_LEVELS = [
   // ливада: спокойно начало, без дупки, само букви и жълъди
-  { id:1,  theme:"meadow", minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3,
+  { id:1,  theme:"meadow", quest:0, minLen:3, maxLen:3, maxDifficulty:1, wordsToPass:3, nuts:3,
     pits:0.00, speed:0.85, modes:["forest"] },
-  { id:2,  theme:"meadow", minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4,
+  { id:2,  theme:"meadow", quest:1, minLen:3, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:4,
     pits:0.08, speed:0.92, modes:["forest"] },
   // гора: влизат предизвикателствата
-  { id:3,  theme:"day", minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
+  { id:3,  theme:"day", quest:2, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
     pits:0.12, speed:1.00, zones:0.6, zoneKinds:["count"], countMax:5, modes:["forest"] },
-  { id:4,  theme:"day", minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
+  { id:4,  theme:"day", quest:3, minLen:4, maxLen:4, maxDifficulty:1, wordsToPass:4, nuts:5,
     pits:0.15, speed:1.04, zones:0.7, zoneKinds:["count","color"], countMax:6, modes:["forest"] },
-  { id:5,  theme:"day", minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
+  { id:5,  theme:"day", quest:4, minLen:4, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
     pits:0.16, speed:1.08, zones:0.7, zoneKinds:["color","first"], movers:0.25, modes:["forest"] },
-  { id:6,  theme:"day", minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
+  { id:6,  theme:"day", quest:5, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:6,
     pits:0.18, speed:1.10, zones:0.8, zoneKinds:["first","sum"], sumMax:5, movers:0.3, modes:["forest"] },
   // есен: сметките растат, площадките се движат по-често
-  { id:7,  theme:"autumn", minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7,
+  { id:7,  theme:"autumn", quest:6, minLen:5, maxLen:5, maxDifficulty:2, wordsToPass:5, nuts:7,
     pits:0.20, speed:1.14, zones:0.8, zoneKinds:["sum","count"], sumMax:6, countMax:8, movers:0.35, modes:["forest"] },
-  { id:8,  theme:"autumn", minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:7,
+  { id:8,  theme:"autumn", quest:7, minLen:5, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:7,
     pits:0.22, speed:1.18, zones:0.85, zoneKinds:["sum","color","first"], sumMax:7, movers:0.4, modes:["forest"] },
-  { id:9,  theme:"autumn", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8,
+  { id:9,  theme:"autumn", quest:8, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:8,
     pits:0.24, speed:1.22, zones:0.9, zoneKinds:["sum","count"], sumMax:8, countMax:9, movers:0.45, modes:["forest"] },
   // нощ: най-трудното, със звезди и светулки
-  { id:10, theme:"night", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9,
+  { id:10, theme:"night", quest:9, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:6, nuts:9,
     pits:0.24, speed:1.26, zones:0.9, zoneKinds:["sum","first","color"], sumMax:9, movers:0.5, modes:["forest"] },
-  { id:11, theme:"night", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:10,
+  { id:11, theme:"night", quest:10, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:10,
     pits:0.26, speed:1.30, zones:1.0, zoneKinds:["sum","count"], sumMax:10, countMax:10, movers:0.55, modes:["forest"] },
-  { id:12, theme:"night", minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:12,
+  { id:12, theme:"night", quest:11, minLen:6, maxLen:6, maxDifficulty:3, wordsToPass:7, nuts:12,
     pits:0.28, speed:1.34, zones:1.0, zoneKinds:["sum","count","color","first"], sumMax:10, countMax:10, movers:0.6, modes:["forest"] }
 ];
 
